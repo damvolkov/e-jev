@@ -1,0 +1,71 @@
+##### BUILD #####
+[build-system]
+requires = ["hatchling>=1.32"]
+build-backend = "hatchling.build"
+
+##### PROJECT #####
+[project]
+name = "e-jev"
+version = "0.1.0"
+description = "Typed, calibrated decisions from logits over a local vLLM server — a self-hosted Jev"
+readme = "README.md"
+### outlines 1.3 caps python <3.14.
+requires-python = ">=3.13,<3.14"
+license = "MIT"
+authors = [{ name = "damvolkov", email = "damvolkovv@gmail.com" }]
+dependencies = [
+    "litestar>=2.24",
+    "granian>=2.8",
+    "msgspec>=0.22",
+    "pydantic-settings>=2.15",
+    "structlog>=26.1",
+    "openai>=2.0",
+    "httpx>=0.28",
+    "outlines>=1.3.3",
+    "numpy>=2.3",
+    "scipy>=1.16",
+]
+
+##### DEPS #####
+[dependency-groups]
+dev = [
+    "ruff>=0.16",
+    "ty>=0.0.75",
+    "pytest>=9.1",
+    "pytest-asyncio>=1.4",
+    "typesafe-sdk>=0.7.2",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/e_jev"]
+
+##### LINT #####
+[tool.ruff]
+line-length = 140
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "I", "N", "UP", "B", "C4", "PIE", "PT", "RET", "SIM", "TID", "ARG", "PTH", "PERF", "FURB", "ASYNC", "RUF"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.isort]
+known-first-party = ["e_jev"]
+
+##### TYPES #####
+[tool.ty.environment]
+python-version = "3.13"
+
+[tool.ty.src]
+include = ["src", "tests"]
+
+##### TEST #####
+[tool.pytest]
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib", "-ra"]
+asyncio_mode = "auto"

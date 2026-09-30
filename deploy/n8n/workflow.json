@@ -1,0 +1,101 @@
+[
+  {
+    "id": "ejevdemo00000001",
+    "name": "e-jev · System One playground",
+    "active": false,
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "nodes": [
+      {
+        "id": "b7d4d0a2-0000-4000-8000-000000000000",
+        "name": "Run",
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          0,
+          300
+        ],
+        "parameters": {}
+      },
+      {
+        "id": "b7d4d0a2-0000-4000-8000-000000000001",
+        "name": "Ticket",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          230,
+          300
+        ],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "t1",
+                "name": "ticket",
+                "type": "string",
+                "value": "Help! My payouts have been failing for 3 days and I close the month tomorrow."
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "b7d4d0a2-0000-4000-8000-000000000002",
+        "name": "Jev · Evaluate",
+        "type": "@typesafe-ai/n8n-nodes-typesafe-ai.typeSafeAi",
+        "typeVersion": 1,
+        "position": [
+          460,
+          300
+        ],
+        "parameters": {
+          "operation": "evaluate",
+          "model": {
+            "__rl": true,
+            "mode": "id",
+            "value": "jev-latest"
+          },
+          "stateFormat": "text",
+          "stateText": "={{ $json.ticket }}",
+          "questionsFormat": "json",
+          "questionsJson": "{\n  \"department\": {\n    \"type\": \"choice\",\n    \"instructions\": \"Which team should handle this?\",\n    \"criteria\": {\n      \"billing\": \"Payments, invoicing, refunds\",\n      \"technical\": \"Bugs, outages, integrations\",\n      \"sales\": \"Pricing, upgrades, new accounts\"\n    }\n  },\n  \"is_urgent\": {\n    \"type\": \"noul\",\n    \"instructions\": \"Does this convey urgency?\",\n    \"criteria\": {\n      \"true\": \"Explicitly time-sensitive\",\n      \"false\": \"No urgency expressed\"\n    }\n  },\n  \"frustration\": {\n    \"type\": \"score\",\n    \"instructions\": \"How frustrated is the customer?\",\n    \"criteria\": [\n      \"Calm\",\n      \"Frustrated\",\n      \"Very angry\"\n    ]\n  }\n}",
+          "options": {
+            "simplify": false
+          }
+        },
+        "credentials": {
+          "typeSafeAiApi": {
+            "id": "ejevlocal0000001",
+            "name": "e-jev (local)"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Run": {
+        "main": [
+          [
+            {
+              "node": "Ticket",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ticket": {
+        "main": [
+          [
+            {
+              "node": "Jev · Evaluate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  }
+]

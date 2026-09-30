@@ -1,0 +1,60 @@
+services:
+
+  vllm:
+    image: vllm/vllm-openai:${VLLM_TAG:-latest}
+    container_name: vllm
+    hostname: vllm
+    restart: unless-stopped
+    ipc: host
+    labels:
+      e-core.category: "ai"
+      e-core.port: "45100"
+    ports:
+      # 45100 — vLLM OpenAI-compatible server (ai)
+      - "${VLLM_PORT:-45100}:45100"
+    volumes:
+      - ../data/vllm:/root/.cache/huggingface
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, compute, utility]
+    # RTX 4090 (24 GB, Ada): weights take 18.3 GiB, so ~3 GiB remain for activations, KV
+    # and CUDA graphs — hence 32k context, 16 seqs x 2048 batched tokens. AWQ INT4 on Marlin, fp8 KV, vision off,
+    # prefix cache on — jev re-sends the same state once per question.
+    # Grammars compiled by xgrammar: the outlines backend rejects Qwen3.6 <|im_end|> (vLLM 0.30.0).
+    command: >-
+      --model ${VLLM_MODEL:-cyankiwi/Qwen3.6-27B-AWQ-INT4}
+      --served-model-name ${VLLM_SERVED_NAME:-qwen3.6-27b}
+      --language-model-only
+      --gpu-memory-utilization ${VLLM_GPU_UTIL:-0.95}
+      --max-model-len ${VLLM_MAX_MODEL_LEN:-32768}
+      --kv-cache-dtype ${VLLM_KV_DTYPE:-fp8}
+      --max-num-seqs ${VLLM_MAX_SEQS:-16}
+      --max-num-batched-tokens ${VLLM_MAX_BATCHED:-2048}
+      --enable-prefix-caching
+      --structured-outputs-config.backend xgrammar
+      --reasoning-parser qwen3
+      --enable-auto-tool-choice
+      --tool-call-parser qwen3_coder
+      --port 45100
+      --api-key ${VLLM_API_KEY:-local-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:45100/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 600s
+    networks:
+      - e-core
+
+networks:
+  e-core:
+    external: true

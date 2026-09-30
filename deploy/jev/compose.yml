@@ -1,0 +1,32 @@
+services:
+
+  jev:
+    image: ghcr.io/damvolkov/e-jev:latest
+    container_name: jev
+    hostname: jev
+    restart: unless-stopped
+    labels:
+      e-core.category: "ai"
+      e-core.port: "45160"
+    ports:
+      # 45160 — e-jev typed decisions over vLLM (ai)
+      - "${JEV_PORT:-45160}:45160"
+    volumes:
+      - ../data/jev:/data
+    environment:
+      - JEV_VLLM_URL=http://vllm:45100/v1
+      - JEV_VLLM_API_KEY=${VLLM_API_KEY:-local-dev}
+      - JEV_MODEL=${VLLM_SERVED_NAME:-qwen3.6-27b}
+      - JEV_PERMUTATIONS=${JEV_PERMUTATIONS:-1}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:45160/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - e-core
+
+networks:
+  e-core:
+    external: true

@@ -1,0 +1,36 @@
+services:
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    hostname: n8n
+    restart: unless-stopped
+    labels:
+      e-core.category: "front"
+      e-core.port: "45700"
+    ports:
+      # 45700 — n8n + official TypeSafe node, pointed at jev (front)
+      - "${N8N_PORT:-45700}:5678"
+    volumes:
+      - ../data/n8n:/home/node/.n8n
+    environment:
+      - GENERIC_TIMEZONE=Europe/Madrid
+      - TZ=Europe/Madrid
+      - N8N_SECURE_COOKIE=false
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_PERSONALIZATION_ENABLED=false
+      - N8N_COMMUNITY_PACKAGES_ENABLED=true
+      - N8N_UNVERIFIED_PACKAGES_ENABLED=true
+      - N8N_RUNNERS_ENABLED=true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - e-core
+
+networks:
+  e-core:
+    external: true
