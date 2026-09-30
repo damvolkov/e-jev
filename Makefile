@@ -18,7 +18,7 @@ SHELL := bash
 MAKEFLAGS += --no-print-directory
 
 ##### TARGETS #####
-.PHONY: help sync lint type test check build deploy ui restart status logs calibrate
+.PHONY: help sync lint type arch test check build deploy ui restart status logs calibrate
 
 help:
 	@printf "$(BOLD)$(CYAN)$(PROJECT)$(RESET) $(GRAY)· typed decisions over vLLM · compose + systemd --user$(RESET)\n\n"
@@ -33,10 +33,13 @@ lint: ## ruff check + format check
 type: ## ty static types
 	@uv run ty check
 
+arch: ## tach layer boundaries
+	@uv run tach check
+
 test: ## pytest
 	@uv run pytest $(ARGS)
 
-check: lint type test ## every local gate
+check: lint type arch test ## every local gate
 
 build: ## build the jev image
 	@docker build -t $(IMAGE) .
@@ -72,7 +75,7 @@ logs: ## follow logs: make logs [vllm|jev]
 
 calibrate: ## fit temperature: make calibrate labeled.jsonl (copied into data/jev), then restart jev
 	@cp $(ARGS) $(COMPOSE)/data/jev/labeled.jsonl
-	@docker exec jev python -m e_jev.calibrate /data/labeled.jsonl
+	@docker exec jev python -m e_jev.cli.calibrate /data/labeled.jsonl
 	@systemctl --user restart jev.service
 
 %:

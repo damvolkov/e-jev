@@ -1,0 +1,63 @@
+##### ROOTS #####
+source_roots = ["src"]
+exclude = ["tests"]
+
+##### RULES #####
+forbid_circular_dependencies = true
+exact = true
+root_module = "forbid"
+
+##### LAYERS #####
+### Ordered high → low: a layer may import lower layers, importing upward fails.
+layers = ["entry", "api", "operational", "adapters", "logic", "core", "models"]
+
+##### MODULES #####
+[[modules]]
+path = "e_jev.main"
+layer = "entry"
+depends_on = []
+
+[[modules]]
+path = "e_jev.cli"
+layer = "entry"
+depends_on = []
+
+[[modules]]
+path = "e_jev.api"
+layer = "api"
+depends_on = []
+
+[[modules]]
+path = "e_jev.operational"
+layer = "operational"
+depends_on = []
+
+[[modules]]
+path = "e_jev.adapters.ports"
+layer = "adapters"
+depends_on = []
+
+[[modules]]
+path = "e_jev.adapters.reader"
+layer = "adapters"
+depends_on = []
+
+[[modules]]
+path = "e_jev.logic"
+layer = "logic"
+depends_on = []
+
+[[modules]]
+path = "e_jev.core"
+layer = "core"
+depends_on = ["e_jev.config"]
+
+[[modules]]
+path = "e_jev.config"
+layer = "core"
+depends_on = []
+
+[[modules]]
+path = "e_jev.models"
+layer = "models"
+depends_on = []

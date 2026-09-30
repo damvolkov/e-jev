@@ -1,4 +1,4 @@
-"""Wire and domain types. The System One shapes mirror TypeSafe's public API (docs.typesafe.ai/api)."""
+"""models.systemone: the System One wire contract, mirroring TypeSafe's public API (docs.typesafe.ai/api)."""
 
 from typing import Annotated, Any
 
@@ -76,26 +76,3 @@ class ModelMetadata(Struct, frozen=True):
 
 class ModelList(Struct, frozen=True):
     models: tuple[ModelMetadata, ...]
-
-
-class ExtractRequest(Struct, frozen=True):
-    state: Json
-    instructions: Json
-    schema: dict[str, Any]
-
-
-class Labeled(Struct, frozen=True):
-    """One calibration example: the choice key, the score level index, or "true"/"false" for a noul."""
-
-    state: Json
-    question: Question
-    label: str
-
-
-class Calibration(Struct, frozen=True):
-    model: str
-    permutations: int
-    temperature: float
-    ece_before: float
-    ece_after: float
-    samples: int
