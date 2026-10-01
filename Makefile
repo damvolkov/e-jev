@@ -18,7 +18,7 @@ SHELL := bash
 MAKEFLAGS += --no-print-directory
 
 ##### TARGETS #####
-.PHONY: help sync lint type arch test check build deploy ui restart status logs calibrate
+.PHONY: help sync lint type arch test check build deploy ui watch restart status logs calibrate
 
 help:
 	@printf "$(BOLD)$(CYAN)$(PROJECT)$(RESET) $(GRAY)· typed decisions over vLLM · compose + systemd --user$(RESET)\n\n"
@@ -62,6 +62,13 @@ ui: ## n8n + official TypeSafe node, credential on jev, demo workflow (http://lo
 	@docker exec n8n n8n import:credentials --input=/tmp/credentials.json && docker exec n8n n8n import:workflow --input=/tmp/workflow.json
 	@systemctl --user restart n8n.service
 	@printf "$(GREEN)✓ n8n on http://localhost:45700 — workflow 'e-jev · System One playground'$(RESET)\n"
+
+watch: ## Phoenix: traces UI + OTLP sink for jev and vllm (http://localhost:45900)
+	@mkdir -p $(COMPOSE)/phoenix && cp deploy/phoenix/compose.yml $(COMPOSE)/phoenix/compose.yml && cp deploy/systemd/phoenix.service $(UNITS)/phoenix.service
+	@docker run --rm -v $(COMPOSE)/data:/d busybox sh -c 'mkdir -p /d/phoenix'
+	@systemctl --user daemon-reload && systemctl --user enable phoenix.service && systemctl --user restart phoenix.service
+	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' phoenix 2>/dev/null)" = healthy ]; do sleep 3; done
+	@printf "$(GREEN)✓ phoenix on http://localhost:45900$(RESET)\n"
 
 restart: ## restart vllm + jev
 	@systemctl --user restart $(addsuffix .service,$(SERVICES))

@@ -20,6 +20,8 @@ import outlines
 import structlog
 from beartype import beartype
 from openai import APIError, AsyncOpenAI
+from opentelemetry.instrumentation.utils import suppress_instrumentation
+from opentelemetry.propagate import inject
 from outlines.types import JsonSchema
 
 from e_jev.core.errors import RequestError
@@ -73,10 +75,11 @@ class VllmReader:
 
     @classmethod
     async def _open_labels(cls, http: httpx.AsyncClient, model: str) -> dict[str, tuple[int, ...]]:
-        """Every label the readout may show, tokenized once by the served tokenizer."""
-        tokens = await asyncio.gather(
-            *(cls._open_tokenize(http, {"model": model, "prompt": label, "add_special_tokens": False}) for label in UNIVERSE)
-        )
+        """Every label the readout may show, tokenized once by the served tokenizer — untraced startup work."""
+        with suppress_instrumentation():
+            tokens = await asyncio.gather(
+                *(cls._open_tokenize(http, {"model": model, "prompt": label, "add_special_tokens": False}) for label in UNIVERSE)
+            )
         return dict(zip(UNIVERSE, tokens, strict=True))
 
     @classmethod
@@ -141,6 +144,7 @@ class VllmReader:
                 temperature=0,
                 logprobs=1,
                 extra_body={"logprob_token_ids": ids, "allowed_token_ids": ids, "return_tokens_as_token_ids": True},
+                extra_headers=self._common_trace(),
             )
         except APIError as error:
             raise VllmReaderError(VllmStage.READOUT, error.message) from error
@@ -157,10 +161,24 @@ class VllmReader:
 
     async def extract(self, prompt: str, schema: dict[str, Any]) -> Json:
         try:
-            raw = await self._extractor(prompt, JsonSchema(schema), max_tokens=self._extract_tokens, temperature=0, extra_body=NO_THINK)
+            raw = await self._extractor(
+                prompt,
+                JsonSchema(schema),
+                max_tokens=self._extract_tokens,
+                temperature=0,
+                extra_body=NO_THINK,
+                extra_headers=self._common_trace(),
+            )
         except APIError as error:
             raise VllmReaderError(VllmStage.EXTRACT, error.message) from error
         return msgspec.json.decode(raw)
+
+    @staticmethod
+    def _common_trace() -> dict[str, str]:
+        """The current trace context as headers: openai's httpx2 transport is not auto-instrumented."""
+        carrier: dict[str, str] = {}
+        inject(carrier)
+        return carrier
 
     async def health(self) -> bool:
         try:

@@ -54,7 +54,7 @@ def plan_labels(sequences: Sequence[Tokens], stop: int) -> tuple[Node, ...]:
 
 def normalize_labels(logprobs: Mapping[int, float]) -> dict[int, float]:
     """One node's raw logprobs renormalized over its candidates."""
-    total = logsumexp(list(logprobs.values()))
+    total = float(logsumexp(list(logprobs.values())))
     return {token: value - total for token, value in logprobs.items()}
 
 

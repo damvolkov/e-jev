@@ -1,4 +1,6 @@
+import msgspec
 import pytest
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from e_jev.models.extract import ExtractRequest
 from e_jev.models.systemone import Choice, ChoiceAnswer, NoulAnswer, ScoreAnswer, SystemOneRequest
@@ -45,3 +47,16 @@ async def test_engine_evaluate_choice_beyond_letters(engine: Engine, size: int) 
     response = await engine.evaluate(request)
     assert isinstance(answer := response.answers["area"], ChoiceAnswer)
     assert (answer.choice, sum(answer.probabilities.values()), len(answer.probabilities)) == ("area_0", pytest.approx(1.0), size)
+
+
+async def test_engine_evaluate_traces_openinference_spans(
+    engine: Engine, request_systemone: SystemOneRequest, spans: InMemorySpanExporter
+) -> None:
+    await engine.evaluate(request_systemone)
+    finished = {span.name: span for span in spans.get_finished_spans()}
+    root = finished["systemone"]
+    assert (root.attributes or {})["openinference.span.kind"] == "CHAIN"
+    assert isinstance(output := (root.attributes or {})["output.value"], str)
+    assert set(msgspec.json.decode(output)["answers"]) == {"is_urgent", "department", "frustration"}
+    assert {"question is_urgent", "question department", "question frustration", "readout"} <= set(finished)
+    assert (finished["readout"].attributes or {})["openinference.span.kind"] == "LLM"

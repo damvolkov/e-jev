@@ -5,9 +5,13 @@ With two permutations each question is asked in both option orders and the distr
 """
 
 import asyncio
+from typing import Final
 
+import msgspec
 import numpy as np
 from beartype import beartype
+from openinference.semconv.trace import OpenInferenceMimeTypeValues, OpenInferenceSpanKindValues, SpanAttributes
+from opentelemetry import trace
 from scipy.special import logsumexp
 
 from e_jev.adapters.ports import Reader
@@ -18,7 +22,11 @@ from e_jev.logic.primitives import Readout, build_answer, orders_readout, prompt
 from e_jev.models.calibration import Calibration
 from e_jev.models.extract import ExtractRequest
 from e_jev.models.reading import Reading
-from e_jev.models.systemone import Json, Question, SystemOneRequest, SystemOneResponse, Usage
+from e_jev.models.systemone import Answer, Json, Question, SystemOneRequest, SystemOneResponse, Usage
+
+tracer = trace.get_tracer("e_jev")
+KIND: Final = SpanAttributes.OPENINFERENCE_SPAN_KIND
+JSON: Final = OpenInferenceMimeTypeValues.JSON.value
 
 EXTRACT = "{instructions}\n\nState:\n{state}\n\nReply only with JSON matching the schema."
 
@@ -59,9 +67,26 @@ class Engine:
     ##### PRIVATE #####
 
     async def _read_node(self, prompt: tuple[int, ...], node: Node) -> dict[int, float]:
-        async with self._slots:
-            reading = await self._reader.logprobs((*prompt, *node.prefix), node.candidates)
-        return dict(zip(node.candidates, reading.scores.tolist(), strict=True))
+        with tracer.start_as_current_span("readout") as span:
+            span.set_attributes(
+                {
+                    KIND: OpenInferenceSpanKindValues.LLM.value,
+                    SpanAttributes.LLM_MODEL_NAME: self._model,
+                    SpanAttributes.LLM_TOKEN_COUNT_PROMPT: len(prompt) + len(node.prefix),
+                    "readout.depth": len(node.prefix),
+                    "readout.candidates": len(node.candidates),
+                }
+            )
+            async with self._slots:
+                reading = await self._reader.logprobs((*prompt, *node.prefix), node.candidates)
+            logprobs = dict(zip(node.candidates, reading.scores.tolist(), strict=True))
+            span.set_attributes(
+                {
+                    SpanAttributes.OUTPUT_VALUE: msgspec.json.encode(normalize_labels(logprobs)).decode(),
+                    SpanAttributes.OUTPUT_MIME_TYPE: JSON,
+                }
+            )
+        return logprobs
 
     async def _read_wave(
         self,
@@ -92,6 +117,21 @@ class Engine:
         scores = score_labels(sequences, self._reader.stop, planned, answers)
         return Reading(scores=scores[np.argsort(order)], input_tokens=len(prompt), calls=len(answers))
 
+    async def _evaluate_question(self, name: str, state: str, question: Question) -> tuple[Answer, Reading]:
+        """One question: its reading, calibrated into a typed answer, traced as one step."""
+        with tracer.start_as_current_span(f"question {name}") as span:
+            span.set_attributes(
+                {
+                    KIND: OpenInferenceSpanKindValues.CHAIN.value,
+                    SpanAttributes.INPUT_VALUE: msgspec.json.encode(question).decode(),
+                    SpanAttributes.INPUT_MIME_TYPE: JSON,
+                }
+            )
+            reading = await self.read(state, question)
+            answer = build_answer(question, scale_temperature(reading.scores, self._temperature))
+            span.set_attributes({SpanAttributes.OUTPUT_VALUE: msgspec.json.encode(answer).decode(), SpanAttributes.OUTPUT_MIME_TYPE: JSON})
+        return answer, reading
+
     ############################################################
 
     ##### PUBLIC #####
@@ -113,24 +153,36 @@ class Engine:
         )
 
     async def evaluate(self, request: SystemOneRequest) -> SystemOneResponse:
-        state = render_json(request.state)
-        try:
-            async with asyncio.TaskGroup() as group:
-                tasks = {name: group.create_task(self.read(state, question)) for name, question in request.questions.items()}
-        except* RequestError as failures:
-            raise EngineEvaluateError(failures) from failures
-        readings = {name: task.result() for name, task in tasks.items()}
-        return SystemOneResponse(
-            model=self._model,
-            answers={
-                name: build_answer(request.questions[name], scale_temperature(reading.scores, self._temperature))
-                for name, reading in readings.items()
-            },
-            usage=Usage(
-                input_tokens=sum(reading.input_tokens for reading in readings.values()),
-                output_tokens=sum(reading.calls for reading in readings.values()),
-            ),
-        )
+        with tracer.start_as_current_span("systemone") as span:
+            span.set_attributes(
+                {
+                    KIND: OpenInferenceSpanKindValues.CHAIN.value,
+                    SpanAttributes.INPUT_VALUE: msgspec.json.encode(request).decode(),
+                    SpanAttributes.INPUT_MIME_TYPE: JSON,
+                }
+            )
+            state = render_json(request.state)
+            try:
+                async with asyncio.TaskGroup() as group:
+                    tasks = {
+                        name: group.create_task(self._evaluate_question(name, state, question))
+                        for name, question in request.questions.items()
+                    }
+            except* RequestError as failures:
+                raise EngineEvaluateError(failures) from failures
+            results = {name: task.result() for name, task in tasks.items()}
+            response = SystemOneResponse(
+                model=self._model,
+                answers={name: answer for name, (answer, _) in results.items()},
+                usage=Usage(
+                    input_tokens=sum(reading.input_tokens for _, reading in results.values()),
+                    output_tokens=sum(reading.calls for _, reading in results.values()),
+                ),
+            )
+            span.set_attributes(
+                {SpanAttributes.OUTPUT_VALUE: msgspec.json.encode(response).decode(), SpanAttributes.OUTPUT_MIME_TYPE: JSON}
+            )
+        return response
 
     async def extract(self, request: ExtractRequest) -> Json:
         prompt = EXTRACT.format(instructions=render_json(request.instructions), state=render_json(request.state))

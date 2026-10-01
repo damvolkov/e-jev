@@ -1,0 +1,29 @@
+services:
+
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    container_name: phoenix
+    hostname: phoenix
+    restart: unless-stopped
+    labels:
+      e-core.category: "watch"
+      e-core.port: "45900"
+    ports:
+      # 45900 — Phoenix: traces UI + OTLP/HTTP at /v1/traces (watch); OTLP/gRPC 4317 stays on e-core
+      - "${PHOENIX_PORT:-45900}:6006"
+    volumes:
+      - ../data/phoenix:/mnt/data
+    environment:
+      - PHOENIX_WORKING_DIR=/mnt/data
+    healthcheck:
+      test: ["CMD", "/usr/bin/python3.13", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6006/healthz')"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - e-core
+
+networks:
+  e-core:
+    external: true

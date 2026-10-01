@@ -16,11 +16,13 @@ TypeSafe's reference definitions.
 | vllm | 45100 | `vllm.service` | `cyankiwi/Qwen3.6-27B-AWQ-INT4` served as `qwen3.6-27b` |
 | jev | 45160 | `jev.service` | System One API |
 | n8n | 45700 | `n8n.service` | optional UI: official TypeSafe node wired to jev |
+| phoenix | 45900 | `phoenix.service` | traces: every evaluation, question, readout and vLLM request, one trace |
 
 Compose dirs live in `~/.config/compose/<service>`, data in `~/.config/compose/data/<service>`.
 
     make deploy    # build jev, install + enable + restart vllm and jev
     make ui        # n8n + official node + credential on jev + demo workflow
+    make watch     # Phoenix: traces UI and OTLP sink for jev and vllm
     make status    # systemd + container health
 
 ## API
@@ -65,7 +67,8 @@ bound to the model and `JEV_PERMUTATIONS`; change either and jev ignores it unti
 vllm: `VLLM_MODEL`, `VLLM_SERVED_NAME`, `VLLM_GPU_UTIL` (0.93), `VLLM_MAX_MODEL_LEN` (16384), `VLLM_MAMBA_BLOCK` (256),
 `VLLM_KV_DTYPE` (fp8), `VLLM_MAX_SEQS` (16), `VLLM_MAX_BATCHED` (2048), `VLLM_API_KEY`.
 jev: `JEV_PERMUTATIONS` (1; 2 asks both option orders, removing position bias at ~2x cost),
-`JEV_CONCURRENCY` (16), `JEV_API_KEY` (unset accepts any bearer key).
+`JEV_CONCURRENCY` (16), `JEV_API_KEY` (unset accepts any bearer key), `JEV_TRIE_EPSILON` (1e-4),
+`JEV_OTLP_ENDPOINT` (unset disables tracing).
 
 ## Differences from Jev
 
