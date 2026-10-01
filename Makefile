@@ -18,7 +18,7 @@ SHELL := bash
 MAKEFLAGS += --no-print-directory
 
 ##### TARGETS #####
-.PHONY: help sync lint type arch test check build deploy ui watch restart status logs calibrate
+.PHONY: help sync lint type arch test integration graph check build deploy ui watch restart status logs calibrate
 
 help:
 	@printf "$(BOLD)$(CYAN)$(PROJECT)$(RESET) $(GRAY)· typed decisions over vLLM · compose + systemd --user$(RESET)\n\n"
@@ -28,7 +28,7 @@ sync: ## sync deps (main + dev)
 	@uv sync
 
 lint: ## ruff check + format check
-	@uv run ruff check src tests && uv run ruff format --check src tests
+	@uv run ruff check src tests examples && uv run ruff format --check src tests examples
 
 type: ## ty static types
 	@uv run ty check
@@ -38,6 +38,12 @@ arch: ## tach layer boundaries
 
 test: ## pytest
 	@uv run pytest $(ARGS)
+
+integration: ## live tests against JEV_URL (default http://localhost:45160): the triage graph through Pydantic AI
+	@uv run pytest -m integration $(ARGS)
+
+graph: ## run the triage graph on one ticket: make graph "text"
+	@PYDANTIC_AI_NO_BANNER=1 uv run python -m examples.triage.graph "$(ARGS)"
 
 check: lint type arch test ## every local gate
 

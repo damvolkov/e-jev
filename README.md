@@ -50,6 +50,36 @@ Official SDK:
     from typesafe_sdk import Choice, TypeSafeClient
     client = TypeSafeClient(api_key="local", base_url="http://localhost:45160")
 
+## Graphs
+
+`examples/triage/graph.py` is a support-ticket triage built on Pydantic AI's TypeSafe model and
+pydantic-graph: typed output models become System One questions (`bool` → noul, `StrEnum` of 30 areas →
+choice, `IntEnum` with a docstring per level → score), and code routes on the answers. It runs unchanged
+against e-jev or TypeSafe's Jev (`JEV_URL`).
+
+    make graph "Our SAML login with Okta fails for every user"
+    make integration      # the graph against the live endpoint, 6 cases
+
+```mermaid
+---
+title: triage
+---
+stateDiagram-v2
+  screen
+  state decision <<choice>>
+  classify
+  discard
+  route
+
+  [*] --> screen
+  screen --> decision
+  decision --> classify: customer
+  decision --> discard: spam
+  classify --> route
+  discard --> [*]
+  route --> [*]
+```
+
 ## Calibrate
 
     make calibrate labeled.jsonl
