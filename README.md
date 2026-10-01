@@ -98,19 +98,29 @@ stateDiagram-v2
 
 ## Calibrate
 
-    make calibrate labeled.jsonl          # runs `ejev calibrate` inside the jev container
+    make calibrate                 # builds 1,200 public examples, fits, restarts jev
+    make calibrate mine.jsonl      # or your own labeled set
 
-One System One question and its truth per line — the choice key, the score level index, or
-`"true"`/`"false"` for a noul:
+One temperature per question kind, fitted on a stable half of the examples; every reported number comes
+from the other, held-out half. The default set: BoolQ (noul), AG News (choice, 4), Banking77 (choice, 77 —
+through the trie), SST-5 (score, 5 levels). Measured on 608 held-out examples (2026-10-01):
 
-    {"state": "...", "question": {"type": "choice", "instructions": "...", "criteria": {"a": null, "b": null}}, "label": "a"}
+| kind | temperature | ECE before | ECE after |
+|---|---|---|---|
+| noul | 2.45 | 0.109 | **0.053** |
+| score | 2.19 | 0.240 | **0.116** |
+| choice | 1.87 | 0.089 | 0.092 |
 
-Writes `calibration.json` (temperature, ECE before/after) and restarts jev, which applies it. A fit is
-bound to the model and `JEV_PERMUTATIONS`; change either and jev ignores it until you refit.
+Accuracy on the same held-out half: AG News 89.8 %, Banking77 78.7 % (77-way), BoolQ 88.1 %, SST-5 54.2 %.
+The raw model is overconfident on yes/no and rubrics, and calibration halves that error; one temperature
+cannot serve 4-way and 77-way choices at once, so choice stays where it was. Calibrate on your own
+questions for numbers that mean something on your data. A fit is bound to the model and
+`JEV_PERMUTATIONS`; change either and jev ignores it until you refit.
 
 ## Tuning
 
-vllm: `VLLM_MODEL`, `VLLM_SERVED_NAME`, `VLLM_GPU_UTIL` (0.93), `VLLM_MAX_MODEL_LEN` (16384), `VLLM_MAMBA_BLOCK` (256),
+vllm: `VLLM_MODEL`, `VLLM_SERVED_NAME`, `VLLM_GPU_UTIL` (0.93), `VLLM_MAX_MODEL_LEN` (20480), `VLLM_MAMBA_BLOCK` (256),
+`VLLM_SSM_DTYPE` (bfloat16: 33 % faster on long states, probability drift p95 0.0066; float32 is exact),
 `VLLM_KV_DTYPE` (fp8), `VLLM_MAX_SEQS` (16), `VLLM_MAX_BATCHED` (2048), `VLLM_API_KEY`.
 jev: `JEV_PERMUTATIONS` (1; 2 asks both option orders, removing position bias at ~2x cost),
 `JEV_CONCURRENCY` (16), `JEV_API_KEY` (unset accepts any bearer key), `JEV_TRIE_EPSILON` (1e-4),
@@ -127,4 +137,5 @@ on par with Jev on a 48-case sample (mean agreement 0.61 vs 0.58), 10–90× slo
 - Choice above 26 options reads numbered labels through a token trie, best-first within a total-variation budget
   `JEV_TRIE_EPSILON` (1e-4; 0 is exact). 255 options take ~3.5 s on one RTX 4090; ≤26 is a single pass.
 - `usage.output_tokens` counts forward passes, one per question and option order.
-- Probabilities come from a general instruct model, uncalibrated until you run `make calibrate`.
+- Context is 20k tokens per request on one 4090; Jev takes 32k for the state plus the longest question.
+- Probabilities come from a general instruct model; `make calibrate` fits them, per question kind.

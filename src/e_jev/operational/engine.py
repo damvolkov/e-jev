@@ -23,7 +23,7 @@ from e_jev.logic.usage import count_tokens
 from e_jev.models.calibration import Calibration
 from e_jev.models.extract import ExtractRequest
 from e_jev.models.reading import Reading
-from e_jev.models.systemone import Answer, Json, Question, SystemOneRequest, SystemOneResponse, Usage
+from e_jev.models.systemone import Answer, Json, Question, QuestionKind, SystemOneRequest, SystemOneResponse, Usage
 
 tracer = trace.get_tracer("e_jev")
 KIND: Final = SpanAttributes.OPENINFERENCE_SPAN_KIND
@@ -52,7 +52,7 @@ class EngineEvaluateError(RequestError):
 
 @beartype
 class Engine:
-    __slots__ = ("_epsilon", "_model", "_permutations", "_reader", "_slots", "_temperature", "calibrated")
+    __slots__ = ("_epsilon", "_model", "_permutations", "_reader", "_slots", "_temperatures", "calibrated")
 
     def __init__(
         self, reader: Reader, *, model: str, permutations: int, concurrency: int, calibration: Calibration | None, epsilon: float = 1e-4
@@ -62,7 +62,7 @@ class Engine:
         self._model = model
         self._permutations = permutations
         self._slots = asyncio.Semaphore(concurrency)
-        self._temperature = calibration.temperature if calibration else 1.0
+        self._temperatures = calibration.temperatures if calibration else {}
         self.calibrated = calibration is not None
 
     ##### PRIVATE #####
@@ -129,7 +129,9 @@ class Engine:
                 }
             )
             reading = await self.read(state, question)
-            answer = build_answer(question, scale_temperature(reading.scores, self._temperature))
+            temperature = self._temperatures.get(QuestionKind.of(question), 1.0)
+            span.set_attribute("jev.temperature", temperature)
+            answer = build_answer(question, scale_temperature(reading.scores, temperature))
             span.set_attributes({SpanAttributes.OUTPUT_VALUE: msgspec.json.encode(answer).decode(), SpanAttributes.OUTPUT_MIME_TYPE: JSON})
         return answer, reading
 

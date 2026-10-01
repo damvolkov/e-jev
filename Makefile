@@ -8,6 +8,8 @@ TYPESAFE_NODE ?= @typesafe-ai/n8n-nodes-typesafe-ai@0.9.0
 EVALS_REV ?= 0ac3b8ad845429f0d8e064ecfb2430a47c5a25cb
 EVALS_LIMIT ?= 12
 JEV_URL ?= http://localhost:45160
+CALIBRATION_SET ?= .cache/labeled.jsonl
+CALIBRATION_SIZE ?= 300
 EVALS_DIR := .cache/workflowevals
 WORKFLOWS := invoice_processing customer_service agent_trace_observability security_incidents
 ARGS      = $(filter-out $(firstword $(MAKECMDGOALS)),$(MAKECMDGOALS))
@@ -97,9 +99,9 @@ status: ## systemd + container health
 logs: ## follow logs: make logs [vllm|jev]
 	@journalctl --user -fu $(or $(ARGS),jev).service
 
-calibrate: ## fit temperature: make calibrate labeled.jsonl (copied into data/jev), then restart jev
-	@cp $(ARGS) $(COMPOSE)/data/jev/labeled.jsonl
-	@docker exec jev ejev calibrate /data/labeled.jsonl
+calibrate: ## fit per-kind temperatures: make calibrate [labeled.jsonl] (default: BoolQ, AG News, Banking77, SST-5), then restart jev
+	@[ -n "$(ARGS)" ] || uv run --with datasets python scripts/calibration_build.py $(CALIBRATION_SET) $(CALIBRATION_SIZE)
+	@JEV_CALIBRATION=$(COMPOSE)/data/jev/calibration.json uv run ejev calibrate $(or $(ARGS),$(CALIBRATION_SET))
 	@systemctl --user restart jev.service
 
 %:

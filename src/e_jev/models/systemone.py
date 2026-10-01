@@ -1,5 +1,6 @@
 """models.systemone: the System One wire contract, mirroring TypeSafe's public API (docs.typesafe.ai/api)."""
 
+from enum import StrEnum, auto
 from typing import Annotated, Any
 
 from msgspec import Meta, Struct
@@ -28,6 +29,16 @@ class Score(Struct, frozen=True, tag="score", tag_field="type"):
 
 
 type Question = Noul | Choice | Score
+
+
+class QuestionKind(StrEnum):
+    NOUL = auto()
+    CHOICE = auto()
+    SCORE = auto()
+
+    @classmethod
+    def of(cls, question: Question) -> "QuestionKind":
+        return cls(question.__struct_config__.tag)
 
 
 class SystemOneRequest(Struct, frozen=True):

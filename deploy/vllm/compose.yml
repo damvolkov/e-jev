@@ -30,8 +30,9 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu, compute, utility]
-    # RTX 4090 (24 GB, Ada): weights take 18.3 GiB, so ~3 GiB remain for activations, KV
-    # and CUDA graphs — hence 32k context, 16 seqs x 2048 batched tokens. AWQ INT4 on Marlin, fp8 KV, vision off,
+    # RTX 4090 (24 GB, Ada): weights take 18.3 GiB; 0.93 leaves the desktop its VRAM. Recurrent state in bf16
+    # (float32 by default) halves its pages: 800-token blocks, 25k cache, 20k context — measured drift p95 0.0066,
+    # VLLM_SSM_DTYPE=float32 restores exactness. AWQ INT4 on Marlin, fp8 KV, vision off,
     # prefix cache on — jev re-sends the same state once per question.
     # Grammars compiled by xgrammar: the outlines backend rejects Qwen3.6 <|im_end|> (vLLM 0.30.0).
     command: >-
@@ -39,12 +40,13 @@ services:
       --served-model-name ${VLLM_SERVED_NAME:-qwen3.6-27b}
       --language-model-only
       --gpu-memory-utilization ${VLLM_GPU_UTIL:-0.93}
-      --max-model-len ${VLLM_MAX_MODEL_LEN:-16384}
+      --max-model-len ${VLLM_MAX_MODEL_LEN:-20480}
       --kv-cache-dtype ${VLLM_KV_DTYPE:-fp8}
       --max-num-seqs ${VLLM_MAX_SEQS:-16}
       --max-num-batched-tokens ${VLLM_MAX_BATCHED:-2048}
       --enable-prefix-caching
       --mamba-block-size ${VLLM_MAMBA_BLOCK:-256}
+      --mamba-ssm-cache-dtype ${VLLM_SSM_DTYPE:-bfloat16}
       --structured-outputs-config.backend xgrammar
       --reasoning-parser qwen3
       --enable-auto-tool-choice

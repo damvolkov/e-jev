@@ -8,6 +8,7 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 
 from e_jev.adapters.ports import Reader
 from e_jev.models.calibration import Calibration
+from e_jev.models.systemone import QuestionKind
 from e_jev.operational.engine import Engine
 
 
@@ -23,7 +24,16 @@ def engine_mirrored(reader: Reader) -> Engine:
 
 @pytest.fixture
 def engine_cooled(reader: Reader) -> Engine:
-    fitted = Calibration(model="m", permutations=1, temperature=1e6, ece_before=0.2, ece_after=0.05, samples=100)
+    fitted = Calibration(
+        model="m",
+        permutations=1,
+        temperatures=dict.fromkeys(QuestionKind, 1e6),
+        ece_before={},
+        ece_after={},
+        accuracy={},
+        fitted=50,
+        held_out=50,
+    )
     return Engine(reader, model="m", permutations=1, concurrency=4, calibration=fitted)
 
 
