@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from typing import Any, Final, Literal
+from typing import Any, Final, Literal, TextIO
 
 import msgspec
 import structlog
@@ -22,14 +22,16 @@ def encode_json(value: Any, **_: Any) -> bytes:
     return msgspec.json.encode(value)
 
 
-def setup_logger(env: Literal["prod", "dev"], level: str) -> None:
+def setup_logger(env: Literal["prod", "dev"], level: str, stream: TextIO | None = None) -> None:
+    """Configure once. The stream resolves at call time: a default bound at import would freeze that moment's stdout."""
+    out = stream or sys.stdout
     match env:
         case "prod":
             renderer: Processor = structlog.processors.JSONRenderer(serializer=encode_json)
-            factory = structlog.BytesLoggerFactory(file=sys.stdout.buffer)
+            factory = structlog.BytesLoggerFactory(file=out.buffer)
         case "dev":
-            renderer = structlog.dev.ConsoleRenderer(colors=sys.stdout.isatty())
-            factory = structlog.PrintLoggerFactory(file=sys.stdout)
+            renderer = structlog.dev.ConsoleRenderer(colors=out.isatty())
+            factory = structlog.PrintLoggerFactory(file=out)
     structlog.configure(
         processors=[*SHARED, renderer],
         wrapper_class=structlog.make_filtering_bound_logger(logging.getLevelNamesMapping()[level]),

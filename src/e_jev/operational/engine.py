@@ -19,6 +19,7 @@ from e_jev.core.errors import JevError, RequestError
 from e_jev.logic.calibration import scale_temperature
 from e_jev.logic.labels import Node, Tokens, frontier_labels, normalize_labels, plan_labels, prune_labels, score_labels, select_labels
 from e_jev.logic.primitives import Readout, build_answer, orders_readout, prompt_readout, read_question, render_json
+from e_jev.logic.usage import count_tokens
 from e_jev.models.calibration import Calibration
 from e_jev.models.extract import ExtractRequest
 from e_jev.models.reading import Reading
@@ -78,8 +79,8 @@ class Engine:
                 }
             )
             async with self._slots:
-                reading = await self._reader.logprobs((*prompt, *node.prefix), node.candidates)
-            logprobs = dict(zip(node.candidates, reading.scores.tolist(), strict=True))
+                scores = await self._reader.logprobs((*prompt, *node.prefix), node.candidates)
+            logprobs = dict(zip(node.candidates, scores.tolist(), strict=True))
             span.set_attributes(
                 {
                     SpanAttributes.OUTPUT_VALUE: msgspec.json.encode(normalize_labels(logprobs)).decode(),
@@ -115,7 +116,7 @@ class Engine:
         ### The root goes alone first: it prefills the prompt into the prefix cache every deeper pass then hits.
         answers = await self._read_wave(prompt, nodes, {(): 1.0}, self._epsilon, {})
         scores = score_labels(sequences, self._reader.stop, planned, answers)
-        return Reading(scores=scores[np.argsort(order)], input_tokens=len(prompt), calls=len(answers))
+        return Reading(scores=scores[np.argsort(order)], prompts=(prompt,), calls=len(answers))
 
     async def _evaluate_question(self, name: str, state: str, question: Question) -> tuple[Answer, Reading]:
         """One question: its reading, calibrated into a typed answer, traced as one step."""
@@ -148,7 +149,7 @@ class Engine:
         normalized = np.stack([reading.scores - logsumexp(reading.scores) for reading in readings])
         return Reading(
             scores=logsumexp(normalized, axis=0) - np.log(len(readings)),
-            input_tokens=sum(reading.input_tokens for reading in readings),
+            prompts=tuple(prompt for reading in readings for prompt in reading.prompts),
             calls=sum(reading.calls for reading in readings),
         )
 
@@ -162,20 +163,21 @@ class Engine:
                 }
             )
             state = render_json(request.state)
+            (lead, question), *rest = request.questions.items()
             try:
+                ### The first question alone prefills the shared state; the others then reuse it in parallel.
                 async with asyncio.TaskGroup() as group:
-                    tasks = {
-                        name: group.create_task(self._evaluate_question(name, state, question))
-                        for name, question in request.questions.items()
-                    }
+                    first = group.create_task(self._evaluate_question(lead, state, question))
+                async with asyncio.TaskGroup() as group:
+                    tasks = {name: group.create_task(self._evaluate_question(name, state, item)) for name, item in rest}
             except* RequestError as failures:
                 raise EngineEvaluateError(failures) from failures
-            results = {name: task.result() for name, task in tasks.items()}
+            results = {lead: first.result()} | {name: task.result() for name, task in tasks.items()}
             response = SystemOneResponse(
                 model=self._model,
                 answers={name: answer for name, (answer, _) in results.items()},
                 usage=Usage(
-                    input_tokens=sum(reading.input_tokens for _, reading in results.values()),
+                    input_tokens=count_tokens([prompt for _, reading in results.values() for prompt in reading.prompts]),
                     output_tokens=sum(reading.calls for _, reading in results.values()),
                 ),
             )

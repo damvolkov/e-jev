@@ -50,6 +50,22 @@ Official SDK:
     from typesafe_sdk import Choice, TypeSafeClient
     client = TypeSafeClient(api_key="local", base_url="http://localhost:45160")
 
+## CLI
+
+`ejev` asks any System One endpoint — this e-jev or TypeSafe's Jev — from the terminal, on the e-cli shape
+(two tables, lazy commands, typed injection, exit codes per failure). Tables with probability bars by
+default, the raw response with `--json`.
+
+    ejev noul "Is this urgent?" --state "Checkout is down, we lose orders"
+    ejev choice "Which team?" "billing=Charges, refunds" "technical=Bugs" sales --state @ticket.txt
+    ejev score "How angry?" Calm Annoyed Furious --state "Third time I write. Unacceptable."
+    ejev --json ask request.json          # a full TypeSafe body: any mix of questions
+    ejev models
+    ejev --url https://api.typesafe.ai --key $TYPESAFE_API_KEY noul ...   # the real Jev
+
+Defaults come from `JEV_CLI_URL`, `JEV_CLI_KEY`, `JEV_CLI_MODEL`. With `JEV_OTLP_ENDPOINT` set, each run is
+traced from the terminal down to vLLM in Phoenix. Exit codes: 2 bad input, 3 endpoint failure.
+
 ## Graphs
 
 `examples/triage/graph.py` is a support-ticket triage built on Pydantic AI's TypeSafe model and
@@ -82,7 +98,7 @@ stateDiagram-v2
 
 ## Calibrate
 
-    make calibrate labeled.jsonl
+    make calibrate labeled.jsonl          # runs `ejev calibrate` inside the jev container
 
 One System One question and its truth per line — the choice key, the score level index, or
 `"true"`/`"false"` for a noul:
@@ -99,6 +115,12 @@ vllm: `VLLM_MODEL`, `VLLM_SERVED_NAME`, `VLLM_GPU_UTIL` (0.93), `VLLM_MAX_MODEL_
 jev: `JEV_PERMUTATIONS` (1; 2 asks both option orders, removing position bias at ~2x cost),
 `JEV_CONCURRENCY` (16), `JEV_API_KEY` (unset accepts any bearer key), `JEV_TRIE_EPSILON` (1e-4),
 `JEV_OTLP_ENDPOINT` (unset disables tracing).
+
+## Benchmark
+
+TypeSafe's WorkflowEvals against e-jev, scored against the published Jev and LLM runs on the same cases:
+on par with Jev on a 48-case sample (mean agreement 0.61 vs 0.58), 10–90× slower. See
+[docs/evals.md](docs/evals.md); reproduce with `make evals`.
 
 ## Differences from Jev
 

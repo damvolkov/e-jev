@@ -18,7 +18,8 @@ from e_jev.models.reading import Scores
 from e_jev.models.systemone import Answer, Choice, ChoiceAnswer, Json, Noul, NoulAnswer, Question, Score, ScoreAnswer
 
 NOUL: Final = ("Yes", "No")
-ASK: Final = "{task} Reply with only the {unit} of your answer.\n\nState:\n{state}\n\nQuestion:\n{instructions}\n\nOptions:\n{options}"
+### The state leads, byte-identical across questions: every question after the first reuses its prefill.
+ASK: Final = "State:\n{state}\n\n{task} Reply with only the {unit} of your answer.\n\nQuestion:\n{instructions}\n\nOptions:\n{options}"
 
 
 class LabelIndexError(ValidationError):

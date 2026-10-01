@@ -71,3 +71,8 @@ async def test_index_label(request_systemone: SystemOneRequest, name: str, label
 async def test_index_label_unknown(request_systemone: SystemOneRequest, name: str, label: str) -> None:
     with pytest.raises(LabelIndexError):
         index_label(request_systemone.questions[name], label)
+
+
+async def test_prompt_readout_state_leads_every_question_type(request_systemone: SystemOneRequest) -> None:
+    prompts = [prompt_readout("STATE", read_question(question), (0, 1)) for question in request_systemone.questions.values()]
+    assert all(prompt.startswith("State:\nSTATE\n\n") for prompt in prompts)

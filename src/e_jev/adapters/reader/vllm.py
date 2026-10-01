@@ -21,13 +21,13 @@ import structlog
 from beartype import beartype
 from openai import APIError, AsyncOpenAI
 from opentelemetry.instrumentation.utils import suppress_instrumentation
-from opentelemetry.propagate import inject
 from outlines.types import JsonSchema
 
 from e_jev.core.errors import RequestError
 from e_jev.core.settings import Settings
+from e_jev.core.telemetry import inject_headers
 from e_jev.logic.labels import UNIVERSE
-from e_jev.models.reading import Reading
+from e_jev.models.reading import Scores
 from e_jev.models.systemone import Json
 
 log = structlog.get_logger()
@@ -134,7 +134,7 @@ class VllmReader:
         except httpx.HTTPError as error:
             raise VllmReaderError(VllmStage.TOKENIZE, str(error)) from error
 
-    async def logprobs(self, tokens: Sequence[int], candidates: Sequence[int]) -> Reading:
+    async def logprobs(self, tokens: Sequence[int], candidates: Sequence[int]) -> Scores:
         ids = list(candidates)
         try:
             reply = await self._client.completions.create(
@@ -144,7 +144,7 @@ class VllmReader:
                 temperature=0,
                 logprobs=1,
                 extra_body={"logprob_token_ids": ids, "allowed_token_ids": ids, "return_tokens_as_token_ids": True},
-                extra_headers=self._common_trace(),
+                extra_headers=inject_headers(),
             )
         except APIError as error:
             raise VllmReaderError(VllmStage.READOUT, error.message) from error
@@ -153,11 +153,7 @@ class VllmReader:
                 raise VllmReaderError(VllmStage.READOUT, "no logprobs returned")
             case logprobs:
                 by_id = {int(token.removeprefix("token_id:")): value for token, value in (logprobs.top_logprobs or [{}])[0].items()}
-        return Reading(
-            scores=np.array([by_id[token] for token in ids]),
-            input_tokens=reply.usage.prompt_tokens if reply.usage else len(tokens),
-            calls=1,
-        )
+        return np.array([by_id[token] for token in ids])
 
     async def extract(self, prompt: str, schema: dict[str, Any]) -> Json:
         try:
@@ -167,18 +163,11 @@ class VllmReader:
                 max_tokens=self._extract_tokens,
                 temperature=0,
                 extra_body=NO_THINK,
-                extra_headers=self._common_trace(),
+                extra_headers=inject_headers(),
             )
         except APIError as error:
             raise VllmReaderError(VllmStage.EXTRACT, error.message) from error
         return msgspec.json.decode(raw)
-
-    @staticmethod
-    def _common_trace() -> dict[str, str]:
-        """The current trace context as headers: openai's httpx2 transport is not auto-instrumented."""
-        carrier: dict[str, str] = {}
-        inject(carrier)
-        return carrier
 
     async def health(self) -> bool:
         try:

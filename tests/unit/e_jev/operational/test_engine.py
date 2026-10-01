@@ -3,7 +3,7 @@ import pytest
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from e_jev.models.extract import ExtractRequest
-from e_jev.models.systemone import Choice, ChoiceAnswer, NoulAnswer, ScoreAnswer, SystemOneRequest
+from e_jev.models.systemone import Choice, ChoiceAnswer, Noul, NoulAnswer, Question, ScoreAnswer, SystemOneRequest
 from e_jev.operational.engine import Engine
 
 
@@ -60,3 +60,10 @@ async def test_engine_evaluate_traces_openinference_spans(
     assert set(msgspec.json.decode(output)["answers"]) == {"is_urgent", "department", "frustration"}
     assert {"question is_urgent", "question department", "question frustration", "readout"} <= set(finished)
     assert (finished["readout"].attributes or {})["openinference.span.kind"] == "LLM"
+
+
+async def test_engine_evaluate_bills_the_state_once(engine: Engine) -> None:
+    state = " ".join(f"fact{index}" for index in range(500))
+    questions: dict[str, Question] = {f"q{index}": Noul(instructions=f"Is fact{index} true?") for index in range(10)}
+    response = await engine.evaluate(SystemOneRequest(state=state, questions=questions))
+    assert 500 < response.usage.input_tokens < 2 * 500

@@ -5,7 +5,7 @@ from contextlib import AbstractAsyncContextManager
 from typing import Any, Protocol, runtime_checkable
 
 from e_jev.core.settings import Settings
-from e_jev.models.reading import Reading
+from e_jev.models.reading import Scores
 from e_jev.models.systemone import Json
 
 
@@ -24,7 +24,7 @@ class Reader(Protocol):
         """The prompt as a user turn, rendered by the chat template up to the start of the answer."""
         ...
 
-    async def logprobs(self, tokens: Sequence[int], candidates: Sequence[int]) -> Reading:
+    async def logprobs(self, tokens: Sequence[int], candidates: Sequence[int]) -> Scores:
         """Next-token log-probabilities after `tokens`, one per candidate, in candidate order."""
         ...
 

@@ -30,7 +30,13 @@ dependencies = [
     "opentelemetry-instrumentation-httpx>=0.66b0",
     "opentelemetry-instrumentation-asgi>=0.66b0",
     "openinference-semantic-conventions>=0.1.39",
+    "cyclopts>=4.25.3,<5",
+    "typesafe-sdk>=0.7.2",
+    "openinference-instrumentation-typesafe>=0.1.1",
 ]
+
+[project.scripts]
+ejev = "e_jev.cli.main:main"
 
 ##### DEPS #####
 [dependency-groups]
@@ -71,6 +77,7 @@ ignore = ["E501", "ISC001", "PLR0913"]
 "src/e_jev/**" = ["TC001", "TC002", "TC003"]
 ### pydantic-graph's StepFunction protocol names the parameter `ctx`, used or not; its types resolve at runtime.
 "examples/**" = ["ARG001", "TC001", "TC002", "TC003"]
+"scripts/**" = ["T20", "INP001"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"

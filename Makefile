@@ -5,6 +5,11 @@ COMPOSE  ?= $(HOME)/.config/compose
 UNITS    ?= $(HOME)/.config/systemd/user
 SERVICES ?= vllm jev
 TYPESAFE_NODE ?= @typesafe-ai/n8n-nodes-typesafe-ai@0.9.0
+EVALS_REV ?= 0ac3b8ad845429f0d8e064ecfb2430a47c5a25cb
+EVALS_LIMIT ?= 12
+JEV_URL ?= http://localhost:45160
+EVALS_DIR := .cache/workflowevals
+WORKFLOWS := invoice_processing customer_service agent_trace_observability security_incidents
 ARGS      = $(filter-out $(firstword $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
 RESET   := \033[0m
@@ -18,7 +23,7 @@ SHELL := bash
 MAKEFLAGS += --no-print-directory
 
 ##### TARGETS #####
-.PHONY: help sync lint type arch test integration graph check build deploy ui watch restart status logs calibrate
+.PHONY: help sync lint type arch test integration graph evals check build deploy ui watch restart status logs calibrate
 
 help:
 	@printf "$(BOLD)$(CYAN)$(PROJECT)$(RESET) $(GRAY)· typed decisions over vLLM · compose + systemd --user$(RESET)\n\n"
@@ -44,6 +49,12 @@ integration: ## live tests against JEV_URL (default http://localhost:45160): the
 
 graph: ## run the triage graph on one ticket: make graph "text"
 	@PYDANTIC_AI_NO_BANNER=1 uv run python -m examples.triage.graph "$(ARGS)"
+
+evals: ## TypeSafe's WorkflowEvals against e-jev (EVALS_LIMIT cases per workflow), scored against published Jev + LLMs
+	@[ -d $(EVALS_DIR) ] || git clone -q https://github.com/typesafe-ai/WorkflowEvals $(EVALS_DIR)
+	@git -C $(EVALS_DIR) checkout -q $(EVALS_REV) && cd $(EVALS_DIR) && uv sync --locked -q
+	@cd $(EVALS_DIR) && for w in $(WORKFLOWS); do TYPESAFE_API_KEY=local uv run python run.py $$w --base-url $(JEV_URL) --name e-jev --limit $(EVALS_LIMIT) --workers 2 | tail -2; done
+	@cd $(EVALS_DIR) && uv run --extra plot python $(CURDIR)/scripts/evals_compare.py
 
 check: lint type arch test ## every local gate
 
@@ -88,7 +99,7 @@ logs: ## follow logs: make logs [vllm|jev]
 
 calibrate: ## fit temperature: make calibrate labeled.jsonl (copied into data/jev), then restart jev
 	@cp $(ARGS) $(COMPOSE)/data/jev/labeled.jsonl
-	@docker exec jev python -m e_jev.cli.calibrate /data/labeled.jsonl
+	@docker exec jev ejev calibrate /data/labeled.jsonl
 	@systemctl --user restart jev.service
 
 %:
