@@ -36,3 +36,15 @@ async def test_systemone_models_keyed(client_keyed: AsyncTestClient, headers: di
 async def test_systemone_evaluate_upstream_failure(client_failing: AsyncTestClient, request_bytes: bytes) -> None:
     reply = await client_failing.post("/v1/systemone", content=request_bytes, headers={"content-type": "application/json"})
     assert (reply.status_code, reply.json()) == (502, {"detail": "readout refused"})
+
+
+@pytest.mark.parametrize(("size", "status"), [(255, 200), (256, 422)])
+async def test_systemone_evaluate_choice_limit(client: AsyncTestClient, size: int, status: int) -> None:
+    body = {"state": "s", "questions": {"q": {"type": "choice", "instructions": "?", "criteria": {f"o{i}": None for i in range(size)}}}}
+    reply = await client.post("/v1/systemone", json=body)
+    assert reply.status_code == status
+
+
+async def test_systemone_request_id_header(client: AsyncTestClient) -> None:
+    ids = {(await client.get("/v1/models")).headers["x-typesafe-request-id"] for _ in range(3)}
+    assert (len(ids), {len(value) for value in ids}) == (3, {32})

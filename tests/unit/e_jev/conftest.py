@@ -1,5 +1,6 @@
 """Unit-wide fixtures: a deterministic Reader, settings bound to a temp calibration path, the docs request."""
 
+from collections.abc import Sequence
 from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
@@ -18,13 +19,25 @@ REFUSED = "readout refused"
 
 
 class FakeReader:
-    """Always prefers the first letter shown — a pure position bias — and costs one token per prompt word."""
+    """Always prefers the lowest candidate token — the first label shown, or stopping — a pure position bias.
+
+    Labels are their characters' code points; the stop token is 0; a prompt costs one token per word."""
 
     def __init__(self, up: bool = True) -> None:
         self.up = up
 
-    async def logprobs(self, prompt: str, size: int) -> Reading:
-        return Reading(scores=-np.arange(size, dtype=np.float64), input_tokens=len(prompt.split()), calls=1)
+    @property
+    def stop(self) -> int:
+        return 0
+
+    def label(self, text: str) -> tuple[int, ...]:
+        return tuple(map(ord, text))
+
+    async def encode(self, prompt: str) -> tuple[int, ...]:
+        return tuple(range(1000, 1000 + len(prompt.split())))
+
+    async def logprobs(self, tokens: Sequence[int], candidates: Sequence[int]) -> Reading:
+        return Reading(scores=-np.arange(len(candidates), dtype=np.float64), input_tokens=len(tokens), calls=1)
 
     async def extract(self, prompt: str, schema: dict[str, Any]) -> Json:
         return {"schema": sorted(schema)}
@@ -36,7 +49,7 @@ class FakeReader:
 class FailingReader(FakeReader):
     """A model server that is up but fails every readout."""
 
-    async def logprobs(self, prompt: str, size: int) -> Reading:
+    async def logprobs(self, tokens: Sequence[int], candidates: Sequence[int]) -> Reading:
         raise RequestError(REFUSED)
 
 

@@ -21,5 +21,6 @@ async def lifespan(app: Litestar, open_reader: OpenReader) -> AsyncIterator[None
             permutations=settings.permutations,
             concurrency=settings.concurrency,
             calibration=Calibration.load(settings.calibration, settings.model, settings.permutations),
+            epsilon=settings.trie_epsilon,
         )
         yield

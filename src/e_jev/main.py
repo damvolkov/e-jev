@@ -14,6 +14,7 @@ from e_jev.adapters.reader.vllm import VllmReader
 from e_jev.api.deps import DEPENDENCIES
 from e_jev.api.handlers import HANDLERS
 from e_jev.api.lifespan import lifespan
+from e_jev.api.middlewares import MIDDLEWARES
 from e_jev.api.router import extract, health, systemone
 from e_jev.core.logger import setup_logger
 from e_jev.core.settings import Settings
@@ -26,6 +27,7 @@ def create_app(settings: Settings = st, open_reader: OpenReader = VllmReader.ope
         route_handlers=[*health.ROUTES, *systemone.ROUTES, *extract.ROUTES],
         lifespan=[partial(lifespan, open_reader=open_reader)],
         dependencies=DEPENDENCIES,
+        middleware=list(MIDDLEWARES),
         exception_handlers=HANDLERS,
         state=State({"settings": settings}),
     )

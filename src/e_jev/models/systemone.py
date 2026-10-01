@@ -18,8 +18,7 @@ class Noul(Struct, frozen=True, tag="noul", tag_field="type"):
 
 
 class Choice(Struct, frozen=True, tag="choice", tag_field="type"):
-    ### Jev accepts 255 options; single-token letters cap this readout at 26.
-    criteria: Annotated[dict[str, Json | None], Meta(min_length=2, max_length=26)]
+    criteria: Annotated[dict[str, Json | None], Meta(min_length=2, max_length=255)]
     instructions: Json | None = None
 
 

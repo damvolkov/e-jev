@@ -1,7 +1,7 @@
 import pytest
 
 from e_jev.models.extract import ExtractRequest
-from e_jev.models.systemone import ChoiceAnswer, NoulAnswer, ScoreAnswer, SystemOneRequest
+from e_jev.models.systemone import Choice, ChoiceAnswer, NoulAnswer, ScoreAnswer, SystemOneRequest
 from e_jev.operational.engine import Engine
 
 
@@ -36,3 +36,12 @@ async def test_engine_cooled_flattens_toward_uniform(engine_cooled: Engine, requ
 
 async def test_engine_extract(engine: Engine) -> None:
     assert await engine.extract(ExtractRequest(state="s", instructions="i", schema={"type": "object"})) == {"schema": ["type"]}
+
+
+@pytest.mark.parametrize("size", [27, 40, 255])
+async def test_engine_evaluate_choice_beyond_letters(engine: Engine, size: int) -> None:
+    criteria = {f"area_{index}": None for index in range(size)}
+    request = SystemOneRequest(state="s", questions={"area": Choice(criteria=criteria, instructions="Which area?")})
+    response = await engine.evaluate(request)
+    assert isinstance(answer := response.answers["area"], ChoiceAnswer)
+    assert (answer.choice, sum(answer.probabilities.values()), len(answer.probabilities)) == ("area_0", pytest.approx(1.0), size)

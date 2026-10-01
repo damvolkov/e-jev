@@ -6,7 +6,6 @@ from uniform to certainty; score is 1 minus the mean distance from the mode, rel
 uniform distribution.
 """
 
-import string
 from dataclasses import dataclass
 from typing import Final
 
@@ -14,12 +13,12 @@ import numpy as np
 from msgspec import json
 
 from e_jev.core.errors import ValidationError
+from e_jev.logic.labels import LETTERS, select_labels
 from e_jev.models.reading import Scores
 from e_jev.models.systemone import Answer, Choice, ChoiceAnswer, Json, Noul, NoulAnswer, Question, Score, ScoreAnswer
 
-LETTERS: Final = string.ascii_uppercase
 NOUL: Final = ("Yes", "No")
-ASK: Final = "{task} Reply with only the letter of your answer.\n\nState:\n{state}\n\nQuestion:\n{instructions}\n\nOptions:\n{options}"
+ASK: Final = "{task} Reply with only the {unit} of your answer.\n\nState:\n{state}\n\nQuestion:\n{instructions}\n\nOptions:\n{options}"
 
 
 class LabelIndexError(ValidationError):
@@ -76,9 +75,11 @@ def read_question(question: Question) -> Readout:
 
 
 def prompt_readout(state: str, readout: Readout, order: tuple[int, ...]) -> str:
-    """The prompt for one option order: letters follow the order, the options are permuted."""
-    options = "\n".join(f"{letter}. {readout.options[index]}" for letter, index in zip(LETTERS, order, strict=False))
-    return ASK.format(task=readout.task, state=state, instructions=readout.instructions, options=options)
+    """The prompt for one option order: labels follow the order, the options are permuted."""
+    labels = select_labels(len(order))
+    options = "\n".join(f"{label}. {readout.options[index]}" for label, index in zip(labels, order, strict=True))
+    unit = "letter" if labels[0] == LETTERS[0] else "number"
+    return ASK.format(task=readout.task, unit=unit, state=state, instructions=readout.instructions, options=options)
 
 
 def orders_readout(size: int, permutations: int) -> tuple[tuple[int, ...], ...]:

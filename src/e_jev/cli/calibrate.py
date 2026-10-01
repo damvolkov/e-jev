@@ -31,7 +31,14 @@ log = structlog.get_logger()
 async def calibrate(samples: tuple[Labeled, ...], settings: Settings) -> Calibration:
     labels = np.array([index_label(sample.question, sample.label) for sample in samples], dtype=np.intp)
     async with VllmReader.open(settings) as reader:
-        engine = Engine(reader, settings.model, settings.permutations, settings.concurrency, calibration=None)
+        engine = Engine(
+            reader,
+            model=settings.model,
+            permutations=settings.permutations,
+            concurrency=settings.concurrency,
+            calibration=None,
+            epsilon=settings.trie_epsilon,
+        )
         async with asyncio.TaskGroup() as group:
             tasks = [group.create_task(engine.read(render_json(sample.state), sample.question)) for sample in samples]
     matrix = pad_scores([task.result().scores for task in tasks])

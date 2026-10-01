@@ -13,6 +13,7 @@ from scipy.special import logsumexp
 from e_jev.adapters.ports import Reader
 from e_jev.core.errors import JevError, RequestError
 from e_jev.logic.calibration import scale_temperature
+from e_jev.logic.labels import Node, Tokens, frontier_labels, normalize_labels, plan_labels, prune_labels, score_labels, select_labels
 from e_jev.logic.primitives import Readout, build_answer, orders_readout, prompt_readout, read_question, render_json
 from e_jev.models.calibration import Calibration
 from e_jev.models.extract import ExtractRequest
@@ -42,9 +43,12 @@ class EngineEvaluateError(RequestError):
 
 @beartype
 class Engine:
-    __slots__ = ("_model", "_permutations", "_reader", "_slots", "_temperature", "calibrated")
+    __slots__ = ("_epsilon", "_model", "_permutations", "_reader", "_slots", "_temperature", "calibrated")
 
-    def __init__(self, reader: Reader, model: str, permutations: int, concurrency: int, calibration: Calibration | None) -> None:
+    def __init__(
+        self, reader: Reader, *, model: str, permutations: int, concurrency: int, calibration: Calibration | None, epsilon: float = 1e-4
+    ) -> None:
+        self._epsilon = epsilon
         self._reader = reader
         self._model = model
         self._permutations = permutations
@@ -54,11 +58,39 @@ class Engine:
 
     ##### PRIVATE #####
 
-    async def _read_order(self, state: str, readout: Readout, order: tuple[int, ...]) -> Reading:
-        """One readout in one option order, scores mapped back to the original option order."""
+    async def _read_node(self, prompt: tuple[int, ...], node: Node) -> dict[int, float]:
         async with self._slots:
-            reading = await self._reader.logprobs(prompt_readout(state, readout, order), len(order))
-        return Reading(scores=reading.scores[np.argsort(order)], input_tokens=reading.input_tokens, calls=reading.calls)
+            reading = await self._reader.logprobs((*prompt, *node.prefix), node.candidates)
+        return dict(zip(node.candidates, reading.scores.tolist(), strict=True))
+
+    async def _read_wave(
+        self,
+        prompt: tuple[int, ...],
+        nodes: dict[Tokens, Node],
+        frontier: dict[Tokens, float],
+        budget: float,
+        answers: dict[Tokens, dict[int, float]],
+    ) -> dict[Tokens, dict[int, float]]:
+        """Expand one level best-first, then recurse into the next; the trie depth (≤3 for 255 labels) bounds it."""
+        kept, dropped = prune_labels(frontier, budget)
+        async with asyncio.TaskGroup() as group:
+            tasks = {prefix: group.create_task(self._read_node(prompt, nodes[prefix])) for prefix in kept}
+        read = {prefix: normalize_labels(task.result()) for prefix, task in tasks.items()}
+        below = frontier_labels(list(nodes.values()), {prefix: frontier[prefix] for prefix in kept}, read)
+        merged = answers | read
+        return await self._read_wave(prompt, nodes, below, budget - dropped, merged) if below else merged
+
+    async def _read_order(self, state: str, readout: Readout, order: tuple[int, ...]) -> Reading:
+        """One option order: the prompt encoded once, the trie read best-first, scores back in the original order."""
+        async with self._slots:
+            prompt = await self._reader.encode(prompt_readout(state, readout, order))
+        sequences = [self._reader.label(label) for label in select_labels(len(order))]
+        planned = plan_labels(sequences, self._reader.stop)
+        nodes = {node.prefix: node for node in planned}
+        ### The root goes alone first: it prefills the prompt into the prefix cache every deeper pass then hits.
+        answers = await self._read_wave(prompt, nodes, {(): 1.0}, self._epsilon, {})
+        scores = score_labels(sequences, self._reader.stop, planned, answers)
+        return Reading(scores=scores[np.argsort(order)], input_tokens=len(prompt), calls=len(answers))
 
     ############################################################
 

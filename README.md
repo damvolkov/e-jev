@@ -62,13 +62,14 @@ bound to the model and `JEV_PERMUTATIONS`; change either and jev ignores it unti
 
 ## Tuning
 
-vllm: `VLLM_MODEL`, `VLLM_SERVED_NAME`, `VLLM_GPU_UTIL` (0.95), `VLLM_MAX_MODEL_LEN` (32768),
+vllm: `VLLM_MODEL`, `VLLM_SERVED_NAME`, `VLLM_GPU_UTIL` (0.93), `VLLM_MAX_MODEL_LEN` (16384), `VLLM_MAMBA_BLOCK` (256),
 `VLLM_KV_DTYPE` (fp8), `VLLM_MAX_SEQS` (16), `VLLM_MAX_BATCHED` (2048), `VLLM_API_KEY`.
 jev: `JEV_PERMUTATIONS` (1; 2 asks both option orders, removing position bias at ~2x cost),
 `JEV_CONCURRENCY` (16), `JEV_API_KEY` (unset accepts any bearer key).
 
 ## Differences from Jev
 
-- Choice caps at 26 options (one single-token letter each); Jev allows 255.
+- Choice above 26 options reads numbered labels through a token trie, best-first within a total-variation budget
+  `JEV_TRIE_EPSILON` (1e-4; 0 is exact). 255 options take ~3.5 s on one RTX 4090; ≤26 is a single pass.
 - `usage.output_tokens` counts forward passes, one per question and option order.
 - Probabilities come from a general instruct model, uncalibrated until you run `make calibrate`.
