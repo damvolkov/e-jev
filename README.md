@@ -107,14 +107,17 @@ through the trie), SST-5 (score, 5 levels). Measured on 608 held-out examples (2
 
 | kind | temperature | ECE before | ECE after |
 |---|---|---|---|
-| noul | 2.45 | 0.109 | **0.053** |
-| score | 2.19 | 0.240 | **0.116** |
-| choice | 1.87 | 0.089 | 0.092 |
+| noul | 2.46 | 0.108 | **0.053** |
+| score | 2.19 | 0.248 | **0.120** |
+| choice (≤26, letters) | 2.80 | 0.091 | **0.068** |
+| choice_wide (>26, trie) | 1.69 | 0.095 | 0.102 |
 
-Accuracy on the same held-out half: AG News 89.8 %, Banking77 78.7 % (77-way), BoolQ 88.1 %, SST-5 54.2 %.
-The raw model is overconfident on yes/no and rubrics, and calibration halves that error; one temperature
-cannot serve 4-way and 77-way choices at once, so choice stays where it was. Calibrate on your own
-questions for numbers that mean something on your data. A fit is bound to the model and
+Accuracy on the same held-out half: AG News 89.8 %, Banking77 79.4 % (77-way), BoolQ 88.1 %, SST-5 54.2 %.
+The raw model is overconfident everywhere it reads letters, and calibration cuts that error by a quarter to
+a half; wide choices, read through the trie, are already near their best. A temperature is fitted to the
+data it saw: decisions that compare probabilities to thresholds tuned for Jev's own calibration move with
+it (see [docs/evals.md](docs/evals.md)), so calibrate on your own questions before trusting thresholds.
+A fit is bound to the model and
 `JEV_PERMUTATIONS`; change either and jev ignores it until you refit.
 
 ## Tuning

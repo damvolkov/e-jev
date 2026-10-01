@@ -1,7 +1,7 @@
 """models.systemone: the System One wire contract, mirroring TypeSafe's public API (docs.typesafe.ai/api)."""
 
 from enum import StrEnum, auto
-from typing import Annotated, Any
+from typing import Annotated, Any, Final
 
 from msgspec import Meta, Struct
 
@@ -31,14 +31,24 @@ class Score(Struct, frozen=True, tag="score", tag_field="type"):
 type Question = Noul | Choice | Score
 
 
+LETTERED: Final = 26
+
+
 class QuestionKind(StrEnum):
+    """How a question is read, which is how it miscalibrates: a choice past the letters is read through a trie."""
+
     NOUL = auto()
     CHOICE = auto()
+    CHOICE_WIDE = auto()
     SCORE = auto()
 
     @classmethod
     def of(cls, question: Question) -> "QuestionKind":
-        return cls(question.__struct_config__.tag)
+        match question:
+            case Choice(criteria=criteria) if len(criteria) > LETTERED:
+                return cls.CHOICE_WIDE
+            case _:
+                return cls(question.__struct_config__.tag)
 
 
 class SystemOneRequest(Struct, frozen=True):
