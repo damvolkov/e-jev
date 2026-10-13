@@ -17,7 +17,7 @@ from beartype import beartype
 from openinference.semconv.trace import OpenInferenceMimeTypeValues, OpenInferenceSpanKindValues, SpanAttributes
 from opentelemetry import trace
 
-from e_jev.adapters.ports import Decider, Extractor
+from e_jev.adapters.ports import Decider, DecisionLog, Extractor
 from e_jev.config.backends import Backend
 from e_jev.core.errors import CapabilityError, JevError, RequestError, RetryableError
 from e_jev.logic.calibration import scale_temperature
@@ -75,7 +75,7 @@ def _capacity_or_group(errors: list[Exception]) -> Exception:
 
 @beartype
 class Engine:
-    __slots__ = ("_calibration", "_deciders", "_extractor", "_model", "_rows", "_specs", "calibrated")
+    __slots__ = ("_calibration", "_deciders", "_extractor", "_log", "_model", "_rows", "_specs", "calibrated")
 
     def __init__(
         self,
@@ -85,6 +85,7 @@ class Engine:
         rows: Mapping[QuestionKind, Sequence[str]] | None = None,
         specs: Sequence[Backend],
         calibration: Calibration | None,
+        decision_log: DecisionLog | None = None,
     ) -> None:
         self._deciders = deciders
         self._model = model
@@ -92,6 +93,7 @@ class Engine:
         self._specs = {spec.id: spec for spec in specs}
         self._calibration = calibration
         self._extractor = next((decider for decider in deciders.values() if isinstance(decider, Extractor)), None)
+        self._log = decision_log
         self.calibrated = calibration is not None
 
     ##### PRIVATE #####
@@ -177,8 +179,13 @@ class Engine:
             step=step + 1,
         )
 
-    def _answer(self, name: str, question: Question, backend: str, scores: Scores) -> Answer:
-        """One routed score vector: calibrated with its own backend's temperature, answered, traced."""
+    def _answer(self, name: str, state: str, question: Question, backend: str, scores: Scores) -> Answer:
+        """One routed score vector: calibrated with its own backend's temperature, logged raw, answered, traced."""
+        match self._log:
+            case None:
+                pass
+            case sink:
+                sink.record(state, question, scores.tolist(), backend)
         with tracer.start_as_current_span(f"question {name}") as span:
             span.set_attributes(
                 {
@@ -218,7 +225,7 @@ class Engine:
                     raise _capacity_or_group(errors)
             response = SystemOneResponse(
                 model=self._model,
-                answers={name: self._answer(name, question, *results[name]) for name, question in request.questions.items()},
+                answers={name: self._answer(name, state, question, *results[name]) for name, question in request.questions.items()},
                 usage=Usage(
                     input_tokens=sum(decision.input_tokens for decision in decisions),
                     output_tokens=sum(decision.output_tokens for decision in decisions),

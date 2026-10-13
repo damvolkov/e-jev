@@ -59,5 +59,12 @@ class Extractor(Protocol):
     async def extract(self, prompt: str, schema: dict[str, Any]) -> Json: ...
 
 
+@runtime_checkable
+class DecisionLog(Protocol):
+    """Where every answered question is written for the distillation loop: state, question, raw scores, backend."""
+
+    def record(self, state: str, question: Question, scores: Sequence[float], backend: str) -> None: ...
+
+
 type OpenReader = Callable[[Settings], AbstractAsyncContextManager[Reader]]
 type OpenFleet = Callable[[Settings], AbstractAsyncContextManager[Mapping[str, Decider]]]

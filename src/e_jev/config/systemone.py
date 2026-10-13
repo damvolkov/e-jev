@@ -18,3 +18,5 @@ class SystemOneSettings(BaseSettings):
     api_key: str | None = None
     ### Names /v1/models advertises; requests may name any, the served model answers.
     aliases: tuple[str, ...] = ("jev-latest",)
+    ### JSONL of answered decisions for the distillation loop; unset logs nothing.
+    decision_log: Path | None = None
