@@ -45,7 +45,7 @@ async def watch(out: Path, pids: list[int], cgroups: list[Path], *, gpu: bool, s
     started = time.perf_counter()
     first = True
     while time.perf_counter() - started < seconds:
-        peak_rss = sum(await _vm_hwm_safe(pid) for pid in pids)
+        peak_rss = sum([await _vm_hwm_safe(pid) for pid in pids])
         for cgroup in cgroups:
             match await _read_cgroup(cgroup):
                 case value:
