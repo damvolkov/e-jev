@@ -8,7 +8,7 @@ structured outputs.
 """
 
 import asyncio
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Mapping, Sequence
 from contextlib import AsyncExitStack, asynccontextmanager
 from enum import StrEnum, auto
 from typing import Any, Final, Self
@@ -19,11 +19,11 @@ import numpy as np
 import outlines
 import structlog
 from beartype import beartype
-from openai import APIError, AsyncOpenAI
+from openai import APIError, APIStatusError, APITimeoutError, AsyncOpenAI, RateLimitError
 from opentelemetry.instrumentation.utils import suppress_instrumentation
 from outlines.types import JsonSchema
 
-from e_jev.core.errors import RequestError
+from e_jev.core.errors import OverloadedError, RateLimitedError, RequestError
 from e_jev.core.settings import Settings
 from e_jev.core.telemetry import inject_headers
 from e_jev.logic.labels import UNIVERSE
@@ -72,6 +72,35 @@ class VllmReader:
     async def _open_tokenize(http: httpx.AsyncClient, body: dict[str, Any]) -> tuple[int, ...]:
         reply = await http.post("/tokenize", json=body)
         return tuple(reply.raise_for_status().json()["tokens"])
+
+    @staticmethod
+    def _open_retry_after(headers: Mapping[str, str]) -> float | None:
+        """The upstream `Retry-After`, honoured when it is a plain number of seconds."""
+        match (headers.get("retry-after") or "").strip():
+            case raw if raw.isdigit():
+                return float(raw)
+            case _:
+                return None
+
+    @staticmethod
+    def _open_classify(stage: VllmStage, error: Exception) -> RequestError:
+        """The typed upstream failure: capacity answers 429/529, everything else is a gateway error.
+
+        openai 3.x rides on httpx2 while the reader's own client is httpx — the SDK's 429 is known by its
+        class, httpx's by its status pattern, and the hint is read off either response as a mapping."""
+        match error:
+            case RateLimitError(response=reply) | httpx.HTTPStatusError(response=httpx.Response(status_code=429) as reply):
+                return RateLimitedError(f"vllm {stage}: rate limited", VllmReader._open_retry_after(reply.headers))
+            case APIStatusError(status_code=503) | httpx.HTTPStatusError(response=httpx.Response(status_code=503)):
+                return OverloadedError(f"vllm {stage}: server overloaded")
+            case APITimeoutError() | httpx.TimeoutException():
+                return OverloadedError(f"vllm {stage}: timed out")
+            case APIError(message=message):
+                return VllmReaderError(stage, message)
+            case httpx.HTTPStatusError(response=response):
+                return VllmReaderError(stage, f"HTTP {response.status_code}: {response.reason_phrase}")
+            case _:
+                return VllmReaderError(stage, str(error))
 
     @classmethod
     async def _open_labels(cls, http: httpx.AsyncClient, model: str) -> dict[str, tuple[int, ...]]:
@@ -132,7 +161,7 @@ class VllmReader:
         try:
             return await self._open_tokenize(self._http, body)
         except httpx.HTTPError as error:
-            raise VllmReaderError(VllmStage.TOKENIZE, str(error)) from error
+            raise self._open_classify(VllmStage.TOKENIZE, error) from error
 
     async def logprobs(self, tokens: Sequence[int], candidates: Sequence[int]) -> Scores:
         ids = list(candidates)
@@ -147,7 +176,7 @@ class VllmReader:
                 extra_headers=inject_headers(),
             )
         except APIError as error:
-            raise VllmReaderError(VllmStage.READOUT, error.message) from error
+            raise self._open_classify(VllmStage.READOUT, error) from error
         match reply.choices[0].logprobs:
             case None:
                 raise VllmReaderError(VllmStage.READOUT, "no logprobs returned")
@@ -166,7 +195,7 @@ class VllmReader:
                 extra_headers=inject_headers(),
             )
         except APIError as error:
-            raise VllmReaderError(VllmStage.EXTRACT, error.message) from error
+            raise self._open_classify(VllmStage.EXTRACT, error) from error
         return msgspec.json.decode(raw)
 
     async def health(self) -> bool:

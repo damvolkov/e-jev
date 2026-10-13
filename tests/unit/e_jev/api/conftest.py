@@ -29,6 +29,18 @@ async def client_failing(settings: Settings, open_reader_failing: OpenReader) ->
 
 
 @pytest.fixture
+async def client_ratelimited(settings: Settings, open_reader_ratelimited: OpenReader) -> AsyncIterator[AsyncTestClient]:
+    async with AsyncTestClient(app=create_app(settings, open_reader_ratelimited)) as client:
+        yield client
+
+
+@pytest.fixture
+async def client_overloaded(settings: Settings, open_reader_overloaded: OpenReader) -> AsyncIterator[AsyncTestClient]:
+    async with AsyncTestClient(app=create_app(settings, open_reader_overloaded)) as client:
+        yield client
+
+
+@pytest.fixture
 async def client_keyed(settings: Settings, open_reader: OpenReader) -> AsyncIterator[AsyncTestClient]:
     async with AsyncTestClient(app=create_app(settings.model_copy(update={"api_key": "k"}), open_reader)) as client:
         yield client

@@ -15,7 +15,7 @@ from opentelemetry import trace
 from scipy.special import logsumexp
 
 from e_jev.adapters.ports import Reader
-from e_jev.core.errors import JevError, RequestError
+from e_jev.core.errors import JevError, RequestError, RetryableError
 from e_jev.logic.calibration import scale_temperature
 from e_jev.logic.labels import Node, Tokens, frontier_labels, normalize_labels, plan_labels, prune_labels, score_labels, select_labels
 from e_jev.logic.primitives import Readout, build_answer, orders_readout, prompt_readout, read_question, render_json
@@ -172,6 +172,8 @@ class Engine:
                     first = group.create_task(self._evaluate_question(lead, state, question))
                 async with asyncio.TaskGroup() as group:
                     tasks = {name: group.create_task(self._evaluate_question(name, state, item)) for name, item in rest}
+            except* RetryableError as capacity:
+                raise RetryableError.from_group(capacity) from capacity
             except* RequestError as failures:
                 raise EngineEvaluateError(failures) from failures
             results = {lead: first.result()} | {name: task.result() for name, task in tasks.items()}

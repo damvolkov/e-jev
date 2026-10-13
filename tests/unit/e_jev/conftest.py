@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 from e_jev.adapters.ports import OpenReader
-from e_jev.core.errors import RequestError
+from e_jev.core.errors import OverloadedError, RateLimitedError, RequestError
 from e_jev.core.settings import Settings
 from e_jev.models.reading import Scores
 from e_jev.models.systemone import Json, SystemOneRequest
@@ -54,6 +54,20 @@ class FailingReader(FakeReader):
         raise RequestError(REFUSED)
 
 
+class RateLimitedReader(FakeReader):
+    """A model server that answers 429: too many requests, with a retry hint."""
+
+    async def logprobs(self, tokens: Sequence[int], candidates: Sequence[int]) -> Scores:
+        raise RateLimitedError(REFUSED, retry_after=2.0)
+
+
+class OverloadedReader(FakeReader):
+    """A model server at capacity: it sheds every readout."""
+
+    async def logprobs(self, tokens: Sequence[int], candidates: Sequence[int]) -> Scores:
+        raise OverloadedError(REFUSED)
+
+
 @pytest.fixture
 def reader() -> FakeReader:
     return FakeReader()
@@ -72,6 +86,16 @@ def open_reader_down() -> OpenReader:
 @pytest.fixture
 def open_reader_failing() -> OpenReader:
     return lambda _: nullcontext(FailingReader())
+
+
+@pytest.fixture
+def open_reader_ratelimited() -> OpenReader:
+    return lambda _: nullcontext(RateLimitedReader())
+
+
+@pytest.fixture
+def open_reader_overloaded() -> OpenReader:
+    return lambda _: nullcontext(OverloadedReader())
 
 
 @pytest.fixture

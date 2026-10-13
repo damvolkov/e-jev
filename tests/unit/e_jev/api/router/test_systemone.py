@@ -38,6 +38,16 @@ async def test_systemone_evaluate_upstream_failure(client_failing: AsyncTestClie
     assert (reply.status_code, reply.json()) == (502, {"detail": "readout refused"})
 
 
+async def test_systemone_evaluate_overloaded(client_overloaded: AsyncTestClient, request_bytes: bytes) -> None:
+    reply = await client_overloaded.post("/v1/systemone", content=request_bytes, headers={"content-type": "application/json"})
+    assert (reply.status_code, reply.json()) == (529, {"detail": "readout refused"})
+
+
+async def test_systemone_evaluate_rate_limited(client_ratelimited: AsyncTestClient, request_bytes: bytes) -> None:
+    reply = await client_ratelimited.post("/v1/systemone", content=request_bytes, headers={"content-type": "application/json"})
+    assert (reply.status_code, reply.json(), reply.headers["retry-after"]) == (429, {"detail": "readout refused"}, "2")
+
+
 @pytest.mark.parametrize(("size", "status"), [(255, 200), (256, 422)])
 async def test_systemone_evaluate_choice_limit(client: AsyncTestClient, size: int, status: int) -> None:
     body = {"state": "s", "questions": {"q": {"type": "choice", "instructions": "?", "criteria": {f"o{i}": None for i in range(size)}}}}
