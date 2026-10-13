@@ -1,6 +1,6 @@
 """e-jev entrypoint: the composition root — the only module that names a concretion.
 
-Routers enter by explicit registration; the lifespan opens the reader and builds the engine.
+Routers enter by explicit registration; the lifespan opens the fleet and builds the engine.
 Granian calls `create_app` per worker.
 """
 
@@ -10,8 +10,8 @@ from litestar import Litestar
 from litestar.datastructures import State
 from litestar.plugins.opentelemetry import OpenTelemetryConfig, OpenTelemetryPlugin
 
-from e_jev.adapters.ports import OpenReader
-from e_jev.adapters.reader.vllm import VllmReader
+from e_jev.adapters import fleet
+from e_jev.adapters.ports import OpenFleet
 from e_jev.api.deps import DEPENDENCIES
 from e_jev.api.handlers import HANDLERS
 from e_jev.api.lifespan import lifespan
@@ -23,12 +23,12 @@ from e_jev.core.settings import settings as st
 from e_jev.core.telemetry import setup_telemetry
 
 
-def create_app(settings: Settings = st, open_reader: OpenReader = VllmReader.open) -> Litestar:
+def create_app(settings: Settings = st, open_fleet: OpenFleet = fleet.open_fleet) -> Litestar:
     setup_logger(settings.env, settings.log_level)
     provider = setup_telemetry(settings.otlp_endpoint, settings.otlp_project)
     return Litestar(
         route_handlers=[*health.ROUTES, *systemone.ROUTES, *extract.ROUTES],
-        lifespan=[partial(lifespan, open_reader=open_reader)],
+        lifespan=[partial(lifespan, open_fleet=open_fleet)],
         dependencies=DEPENDENCIES,
         middleware=list(MIDDLEWARES),
         exception_handlers=HANDLERS,

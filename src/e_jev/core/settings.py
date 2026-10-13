@@ -2,6 +2,7 @@
 
 from pydantic_settings import SettingsConfigDict
 
+from e_jev.config.backends import BackendsSettings
 from e_jev.config.cli import CliSettings
 from e_jev.config.log import LogSettings
 from e_jev.config.systemone import SystemOneSettings
@@ -9,7 +10,7 @@ from e_jev.config.telemetry import TelemetrySettings
 from e_jev.config.vllm import VllmSettings
 
 
-class Settings(VllmSettings, SystemOneSettings, TelemetrySettings, CliSettings, LogSettings):
+class Settings(VllmSettings, SystemOneSettings, BackendsSettings, TelemetrySettings, CliSettings, LogSettings):
     model_config = SettingsConfigDict(env_prefix="JEV_", frozen=True)
 
 

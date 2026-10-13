@@ -5,10 +5,15 @@ from typing import Final
 import structlog
 from litestar import Request, Response
 from litestar.exceptions import ValidationException
-from litestar.status_codes import HTTP_422_UNPROCESSABLE_ENTITY, HTTP_502_BAD_GATEWAY
+from litestar.status_codes import (
+    HTTP_422_UNPROCESSABLE_ENTITY,
+    HTTP_501_NOT_IMPLEMENTED,
+    HTTP_502_BAD_GATEWAY,
+    HTTP_503_SERVICE_UNAVAILABLE,
+)
 from litestar.types import ExceptionHandlersMap
 
-from e_jev.core.errors import STATUSES, RequestError, RetryableError, ValidationError
+from e_jev.core.errors import STATUSES, CapabilityError, RequestError, RetryableError, UnroutableError, ValidationError
 
 log = structlog.get_logger()
 
@@ -31,6 +36,17 @@ def handle_capacity(_: Request, error: RetryableError) -> Response:
     return Response({"detail": error.message}, status_code=STATUSES[error.capacity], headers=headers)
 
 
+def handle_unsupported(_: Request, error: CapabilityError) -> Response:
+    """A capability no decision model has and the fleet lacks entirely: 501, permanent until deployed otherwise."""
+    return Response({"detail": error.message}, status_code=HTTP_501_NOT_IMPLEMENTED)
+
+
+def handle_unroutable(request: Request, error: UnroutableError) -> Response:
+    """The state or question is beyond every backend's budget: the fleet as configured cannot serve it."""
+    log.warning("unroutable", path=request.url.path, error=error.message)
+    return Response({"detail": error.message}, status_code=HTTP_503_SERVICE_UNAVAILABLE)
+
+
 def handle_upstream(request: Request, error: RequestError) -> Response:
     log.error("upstream_failed", path=request.url.path, error=error.message, exc_info=error)
     return Response({"detail": error.message}, status_code=HTTP_502_BAD_GATEWAY)
@@ -39,6 +55,8 @@ def handle_upstream(request: Request, error: RequestError) -> Response:
 HANDLERS: Final[ExceptionHandlersMap] = {
     ValidationException: handle_invalid,
     ValidationError: handle_unprocessable,
+    CapabilityError: handle_unsupported,
+    UnroutableError: handle_unroutable,
     RetryableError: handle_capacity,
     RequestError: handle_upstream,
 }

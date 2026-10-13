@@ -1,12 +1,13 @@
 """adapters.ports: what the core needs from a model server — nothing about which one."""
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from typing import Any, Protocol, runtime_checkable
 
 from e_jev.core.settings import Settings
+from e_jev.models.decision import Decision
 from e_jev.models.reading import Scores
-from e_jev.models.systemone import Json
+from e_jev.models.systemone import Json, Question
 
 
 @runtime_checkable
@@ -35,4 +36,28 @@ class Reader(Protocol):
     async def health(self) -> bool: ...
 
 
+@runtime_checkable
+class Decider(Protocol):
+    """Request level: a state and its whole set of questions in, raw option scores out — one forward per backend."""
+
+    @property
+    def backend(self) -> str:
+        """The fleet id this decider answers as: the key its calibration is fitted under."""
+        ...
+
+    async def decide(self, state: str, questions: Mapping[str, Question]) -> Decision:
+        """Scores in log space per question, over its options in order; capacity and contract failures raise."""
+        ...
+
+    async def health(self) -> bool: ...
+
+
+@runtime_checkable
+class Extractor(Protocol):
+    """The capability only the generative teacher keeps: a value generated under a JSON schema."""
+
+    async def extract(self, prompt: str, schema: dict[str, Any]) -> Json: ...
+
+
 type OpenReader = Callable[[Settings], AbstractAsyncContextManager[Reader]]
+type OpenFleet = Callable[[Settings], AbstractAsyncContextManager[Mapping[str, Decider]]]

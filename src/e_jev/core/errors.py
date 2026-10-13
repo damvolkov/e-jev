@@ -17,6 +17,10 @@ class RequestError(JevError):
     """An upstream call failed or answered out of contract."""
 
 
+class CapabilityError(JevError):
+    """No backend in the fleet serves this capability: 501, and it will not change by asking again."""
+
+
 class Capacity(StrEnum):
     """The statuses TypeSafe's SDKs retry: 429 the client sent too fast, 529 the server is at capacity."""
 
@@ -72,6 +76,15 @@ class OverloadedError(RetryableError):
 
 class ValidationError(JevError):
     """Input that parsed but cannot be honoured."""
+
+
+class UnroutableError(JevError):
+    """No backend in the fleet may answer this question: the state is beyond every budget, or the row names none."""
+
+    def __init__(self, kind: object, name: str, row: list[str]) -> None:
+        super().__init__(f"question {name!r} ({kind}) is unroutable: row {row or 'empty'} holds no eligible backend")
+        self.kind = kind
+        self.name = name
 
 
 class CliError(JevError):

@@ -43,6 +43,16 @@ layer = "adapters"
 depends_on = []
 
 [[modules]]
+path = "e_jev.adapters.decider"
+layer = "adapters"
+depends_on = ["e_jev.adapters.ports"]
+
+[[modules]]
+path = "e_jev.adapters.fleet"
+layer = "adapters"
+depends_on = ["e_jev.adapters.ports", "e_jev.adapters.reader", "e_jev.adapters.decider"]
+
+[[modules]]
 path = "e_jev.logic"
 layer = "logic"
 depends_on = []

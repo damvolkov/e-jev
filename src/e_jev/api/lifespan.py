@@ -1,26 +1,25 @@
-"""api.lifespan: the reader is opened for the app's lifetime and the engine built over it."""
+"""api.lifespan: the fleet is opened for the app's lifetime and the engine built over it."""
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from litestar import Litestar
 
-from e_jev.adapters.ports import OpenReader
+from e_jev.adapters.ports import OpenFleet
 from e_jev.core.settings import Settings
 from e_jev.models.calibration import Calibration
 from e_jev.operational.engine import Engine
 
 
 @asynccontextmanager
-async def lifespan(app: Litestar, open_reader: OpenReader) -> AsyncIterator[None]:
+async def lifespan(app: Litestar, open_fleet: OpenFleet) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
-    async with open_reader(settings) as reader:
+    async with open_fleet(settings) as fleet:
         app.state.engine = Engine(
-            reader=reader,
+            fleet,
             model=settings.model,
-            permutations=settings.permutations,
-            concurrency=settings.concurrency,
-            calibration=Calibration.load(settings.calibration, settings.model, settings.permutations),
-            epsilon=settings.trie_epsilon,
+            rows=settings.rows,
+            specs=settings.backends,
+            calibration=Calibration.load(settings.calibration, settings.permutations),
         )
         yield
