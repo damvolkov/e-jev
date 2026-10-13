@@ -23,6 +23,11 @@ layer = "entry"
 depends_on = []
 
 [[modules]]
+path = "e_jev.mcp"
+layer = "entry"
+depends_on = ["e_jev.cli"]
+
+[[modules]]
 path = "e_jev.api"
 layer = "api"
 depends_on = []

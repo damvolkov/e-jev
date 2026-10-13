@@ -33,10 +33,12 @@ dependencies = [
     "cyclopts>=4.25.3,<5",
     "typesafe-sdk>=0.7.2",
     "openinference-instrumentation-typesafe>=0.1.1",
+    "mcp>=2.3.0",
 ]
 
 [project.scripts]
 ejev = "e_jev.cli.main:main"
+ejev-mcp = "e_jev.mcp:main"
 
 ##### DEPS #####
 [dependency-groups]

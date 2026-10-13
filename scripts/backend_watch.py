@@ -38,7 +38,7 @@ def _kb(line: str) -> int:
     return int(line.split()[1]) * 1024
 
 
-async def watch(out: Path, pids: list[int], cgroups: list[Path], gpu: bool, seconds: float, interval: float) -> None:
+async def watch(out: Path, pids: list[int], cgroups: list[Path], *, gpu: bool, seconds: float, interval: float) -> None:
     peak_rss = 0
     per_pid: dict[int, int] = {}
     baseline = total = 0
@@ -59,7 +59,7 @@ async def watch(out: Path, pids: list[int], cgroups: list[Path], gpu: bool, seco
                 baseline = sum(apps.values()) if first else baseline
         first = False
         await asyncio.sleep(interval)
-    out.write_text(
+    await asyncio.to_thread(out.write_text,
         json.dumps(
             {
                 "peak_rss_bytes": peak_rss,
@@ -101,7 +101,7 @@ def main() -> None:
     parser.add_argument("--seconds", type=float, default=600)
     parser.add_argument("--interval", type=float, default=0.2)
     args = parser.parse_args()
-    asyncio.run(watch(args.out, args.pid, args.cgroup, args.gpu, args.seconds, args.interval))
+    asyncio.run(watch(args.out, args.pid, args.cgroup, gpu=args.gpu, seconds=args.seconds, interval=args.interval))
     print(f"watched -> {args.out}")
 
 

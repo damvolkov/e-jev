@@ -87,8 +87,8 @@ class Backend:
         for conc in concurrencies:
             sem = asyncio.Semaphore(conc)
 
-            async def one(sample: Labeled) -> tuple[str, float] | None:
-                async with sem:
+            async def one(sample: Labeled, gate: asyncio.Semaphore = sem) -> tuple[str, float] | None:
+                async with gate:
                     try:
                         _, seconds = await self._open_answer(sample)
                     except (httpx.HTTPError, msgspec.DecodeError):
@@ -168,9 +168,9 @@ async def run(config: str, base_url: str, files: Sequence[Path], args: argparse.
             "model_requested": args.model,
             "rows": {"total": len(samples), "answered": len(pairs), "failed": len(samples) - len(pairs)},
             "fit": {
-                "temperatures": {kind: value for kind, value in fit.temperatures.items()},
-                "ece_before": {kind: value for kind, value in fit.ece_before.items()},
-                "ece_after": {kind: value for kind, value in fit.ece_after.items()},
+                "temperatures": dict(fit.temperatures),
+                "ece_before": dict(fit.ece_before),
+                "ece_after": dict(fit.ece_after),
                 "accuracy": fit.accuracy,
             },
             "latency": phase,

@@ -8,7 +8,6 @@ Ids and revisions (2026-10-13): AmazonScience/massive ff6bd8e data-version 1.0 Â
 40f65d4 Â· facebook/xnli b8dd5d7. MASSIVE 1.0 carries no sentiment, hence the tweet set for the score kind.
 """
 
-import io
 import random
 import sys
 import tarfile
@@ -43,7 +42,7 @@ def rows_of(dataset: str, config: str, split: str, total: int) -> list[dict[str,
     out: list[dict[str, Any]] = []
     for offset in range(0, total, 100):
         url = ROWS_API.format(dataset=dataset, config=config, split=split, offset=offset, length=min(100, total - offset))
-        page = msgspec.json.decode(urllib.request.urlopen(url, timeout=60).read())
+        page = msgspec.json.decode(urllib.request.urlopen(url, timeout=60).read()  # noqa: S310)
         out.extend(row["row"] for row in page.get("rows", []))
     return out
 
