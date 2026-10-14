@@ -1,15 +1,16 @@
-"""scripts/backend_watch.py: sample peak VRAM and peak RSS while a backend answers.
+"""scripts/backend_watch.py: sample peak VRAM and peak RSS while a backend answers, writing on stop or timeout.
 
     uv run python scripts/backend_watch.py OUT.json --seconds 600 [--pid PID ...] [--cgroup memory.peak ...] [--gpu]
 
 VRAM is `nvidia-smi --query-compute-apps` per pass: the sum, and each pid's own peak — the difference from
-the first pass is what the backend added to the card, the per-pid peak is its own. RSS is the kernel's high
-water mark (`VmHWM` per process, `memory.peak` per cgroup), so peaks survive the process."""
+the first pass is what the backend added to the card. RSS is the kernel's high water mark (`VmHWM` per
+process, `memory.peak` per cgroup). SIGTERM (the runner's stop) writes the report before exiting."""
 
 import argparse
 import asyncio
 import json
 import re
+import signal
 import time
 from pathlib import Path
 
@@ -21,67 +22,28 @@ async def _gpu_apps() -> dict[int, int]:
         "nvidia-smi", f"--query-compute-apps={GPU_FIELDS}", "--format=csv,noheader,nounits", stdout=asyncio.subprocess.PIPE
     )
     out, _ = await proc.communicate()
-    rows: dict[int, int] = {}
+    apps: dict[int, int] = {}
     for line in out.decode().splitlines():
         match re.match(r"^\s*(\d+)\s*,\s*(\d+)", line):
             case [_, pid, mib]:
-                rows[int(pid)] = int(mib) * 1024 * 1024
-    return rows
-
-
-async def _vm_hwm(pid: int) -> int:
-    status = await asyncio.to_thread(Path(f"/proc/{pid}/status").read_text)
-    return next(_kb(line) for line in status.splitlines() if line.startswith("VmHWM:"))
+                apps[int(pid)] = int(mib) * 1024 * 1024
+    return apps
 
 
 def _kb(line: str) -> int:
     return int(line.split()[1]) * 1024
 
 
-async def watch(out: Path, pids: list[int], cgroups: list[Path], *, gpu: bool, seconds: float, interval: float) -> None:
-    peak_rss = 0
-    per_pid: dict[int, int] = {}
-    baseline = total = 0
-    started = time.perf_counter()
-    first = True
-    while time.perf_counter() - started < seconds:
-        peak_rss = sum([await _vm_hwm_safe(pid) for pid in pids])
-        for cgroup in cgroups:
-            match await _read_cgroup(cgroup):
-                case value:
-                    peak_rss = max(peak_rss, value)
-        match gpu:
-            case True:
-                apps = await _gpu_apps()
-                for pid, used in apps.items():
-                    per_pid[pid] = max(per_pid.get(pid, 0), used)
-                total = max(total, sum(apps.values()))
-                baseline = sum(apps.values()) if first else baseline
-        first = False
-        await asyncio.sleep(interval)
-    await asyncio.to_thread(out.write_text,
-        json.dumps(
-            {
-                "peak_rss_bytes": peak_rss,
-                "peak_gpu_bytes": total if gpu else 0,
-                "baseline_gpu_bytes": baseline,
-                "backend_gpu_bytes": max(0, (total - baseline)) if gpu else 0,
-                "per_pid_gpu_bytes": per_pid,
-                "seconds": round(time.perf_counter() - started, 1),
-            }
-        )
-    )
-
-
 async def _vm_hwm_safe(pid: int) -> int:
     try:
-        return await _vm_hwm(pid)
-    except (OSError, StopIteration):
+        status = await asyncio.to_thread(Path(f"/proc/{pid}/status").read_text)
+    except OSError:
         return 0
-
-
-def _as_path(text: str) -> Path:
-    return Path(text)
+    match [line for line in status.splitlines() if line.startswith("VmHWM:")]:
+        case [line]:
+            return _kb(line)
+        case _:
+            return 0
 
 
 async def _read_cgroup(path: Path) -> int:
@@ -90,6 +52,47 @@ async def _read_cgroup(path: Path) -> int:
     except OSError:
         return 0
     return int(raw) if raw.isdigit() else 0
+
+
+def _as_path(text: str) -> Path:
+    return Path(text)
+
+
+async def watch(out: Path, pids: list[int], cgroups: list[Path], *, gpu: bool, seconds: float, interval: float) -> None:
+    peak_rss = 0
+    per_pid: dict[int, int] = {}
+    baseline = total = 0
+    started = time.perf_counter()
+    first = True
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for signal_number in (signal.SIGTERM, signal.SIGINT):
+        loop.add_signal_handler(signal_number, stop.set)
+    while not stop.is_set() and time.perf_counter() - started < seconds:
+        peak_rss = sum([await _vm_hwm_safe(pid) for pid in pids]) if pids else peak_rss
+        for cgroup in cgroups:
+            peak_rss = max(peak_rss, await _read_cgroup(cgroup))
+        if gpu:
+            apps = await _gpu_apps()
+            for pid, used in apps.items():
+                per_pid[pid] = max(per_pid.get(pid, 0), used)
+            total = max(total, sum(apps.values()))
+            baseline = sum(apps.values()) if first else baseline
+        first = False
+        await asyncio.sleep(interval)
+    await asyncio.to_thread(
+        out.write_text,
+        json.dumps(
+            {
+                "peak_rss_bytes": peak_rss,
+                "peak_gpu_bytes": total if gpu else 0,
+                "baseline_gpu_bytes": baseline,
+                "backend_gpu_bytes": max(0, total - baseline) if gpu else 0,
+                "per_pid_gpu_bytes": per_pid,
+                "seconds": round(time.perf_counter() - started, 1),
+            }
+        ),
+    )
 
 
 def main() -> None:

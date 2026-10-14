@@ -19,7 +19,7 @@ import structlog
 from e_jev.config.backends import Backend
 from e_jev.core.errors import OverloadedError, RateLimitedError, RequestError
 from e_jev.models.decision import Decision
-from e_jev.models.systemone import Answer, ChoiceAnswer, NoulAnswer, Question, ScoreAnswer, SystemOneResponse
+from e_jev.models.systemone import Answer, Choice, ChoiceAnswer, NoulAnswer, Question, Score, ScoreAnswer, SystemOneResponse
 
 log = structlog.get_logger()
 EPS: Final = 1e-12
@@ -31,15 +31,20 @@ class ContractError(RequestError):
     """The server answered, but not for the questions asked, or without a usable distribution."""
 
 
-def _scores(answer: Answer) -> np.ndarray:
-    """The answer's published probabilities, in the question's option order, in log space."""
+def _scores(answer: Answer, question: Question) -> np.ndarray:
+    """The answer's probabilities aligned to the question's option order, in log space.
+
+    Servers echo `probabilities` with their own key order — the vector is read BY KEY, never positionally,
+    or a choice answered correctly would be scored as its permutation."""
     match answer:
         case NoulAnswer(noul=p):
             probs = np.array([p, 1.0 - p])
-        case ChoiceAnswer(probabilities=published):
+        case ChoiceAnswer(probabilities=published) if isinstance(question, Choice):
+            probs = np.array([published.get(name, 0.0) for name in question.criteria])
+        case ScoreAnswer(probabilities=published) if isinstance(question, Score):
+            probs = np.array([published.get(str(level), 0.0) for level in range(len(question.criteria))])
+        case ChoiceAnswer(probabilities=published) | ScoreAnswer(probabilities=published):
             probs = np.array(list(published.values()))
-        case ScoreAnswer(probabilities=published):
-            probs = np.array([published[str(level)] for level in range(len(published))])
     return np.log(np.clip(probs, EPS, None))
 
 
@@ -104,7 +109,7 @@ class SystemOneDecider:
                 message = f"out of contract: no answer for {first}"
                 raise ContractError(message)
             case _:
-                scores = {name: _scores(response.answers[name]) for name in questions}
+                scores = {name: _scores(response.answers[name], question) for name, question in questions.items()}
         return Decision(scores=scores, input_tokens=response.usage.input_tokens, output_tokens=response.usage.output_tokens)
 
     async def health(self) -> bool:

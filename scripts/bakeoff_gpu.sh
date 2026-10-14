@@ -23,15 +23,15 @@ trap restore EXIT
 
 cd "$REPO"
 stamp "stop vllm jev (GPU window)"
-systemctl --user stop jev vllm
+systemctl --user stop jev vllm 2>/dev/null || true
 
 # C1 — Clef-Flash Q4_K_M on llama.cpp, GPU.
 docker run -d --name bake-clef --gpus all -p 45164:8080 -v "$DATA/clef/models:/models:ro" \
-  ghcr.io/ggml-org/llama.cpp:server-cuda /app/llama-server -m /models/Clef-Flash-Q4_K_M.gguf --host 0.0.0.0 --port 8080 -c 32768 -ngl 99
+  ghcr.io/ggml-org/llama.cpp:server-cuda -m /models/Clef-Flash-Q4_K_M.gguf --host 0.0.0.0 --port 8080 -c 32768 -ngl 99 -b 8192 -ub 4096
 CGROUP=$(docker inspect --format '{{.Id}}' bake-clef)
 stamp "cold-start begin C1_clef_q4"
 until curl -sf http://localhost:45164/health >/dev/null; do sleep 1; done
-curl -s http://localhost:45164/health >/dev/null && stamp "cold-start end C1_clef_q4 first answer ready"
+curl -s http://localhost:45164/health >/dev/null && curl -s -X POST http://localhost:45164/v1/systemone -H 'content-type: application/json' -d '{"model":"clef","state":"x","questions":{"q":{"type":"noul","instructions":"t?"}}}' >/dev/null && stamp "cold-start end C1_clef_q4 first systemone answer ready"
 uv run python scripts/backend_watch.py "$R/watch_C1_clef_q4.json" --gpu \
   --cgroup "/sys/fs/cgroup/system.slice/docker-${CGROUP}.scope/memory.peak" --seconds 1500 &
 WATCH_C1=$!
@@ -65,7 +65,7 @@ kill $WATCH_B $LAYA_PID 2>/dev/null; wait 2>/dev/null
 
 # C2 — Clef-Flash Q8_0, GPU.
 docker run -d --name bake-clef8 --gpus all -p 45168:8080 -v "$DATA/clef/models:/models:ro" \
-  ghcr.io/ggml-org/llama.cpp:server-cuda /app/llama-server -m /models/Clef-Flash-Q8_0.gguf --host 0.0.0.0 --port 8080 -c 32768 -ngl 99
+  ghcr.io/ggml-org/llama.cpp:server-cuda -m /models/Clef-Flash-Q8_0.gguf --host 0.0.0.0 --port 8080 -c 32768 -ngl 99 -b 8192 -ub 4096
 CG8=$(docker inspect --format '{{.Id}}' bake-clef8)
 until curl -sf http://localhost:45168/health >/dev/null; do sleep 1; done
 uv run python scripts/backend_watch.py "$R/watch_C2_clef_q8.json" --gpu --cgroup "/sys/fs/cgroup/system.slice/docker-${CG8}.scope/memory.peak" --seconds 1500 &

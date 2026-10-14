@@ -42,7 +42,7 @@ def rows_of(dataset: str, config: str, split: str, total: int) -> list[dict[str,
     out: list[dict[str, Any]] = []
     for offset in range(0, total, 100):
         url = ROWS_API.format(dataset=dataset, config=config, split=split, offset=offset, length=min(100, total - offset))
-        page = msgspec.json.decode(urllib.request.urlopen(url, timeout=60).read()  # noqa: S310)
+        page = msgspec.json.decode(urllib.request.urlopen(url, timeout=60).read())  # noqa: S310
         out.extend(row["row"] for row in page.get("rows", []))
     return out
 
@@ -109,7 +109,7 @@ def build_rows(size: int, cache: Path) -> list[dict]:
 def narrow(gold: str, all_intents: list[str], index: int) -> dict[str, None]:
     """The 20-option question Laya evaluates: gold plus 19 distractors, order seeded per row."""
     others = [intent for intent in all_intents if intent != gold]
-    rng = random.Random(f"{SEED}:{index}")
+    rng = random.Random(f"{SEED}:{index}")  # noqa: S311 — deterministic sampling, not crypto
     keys = [gold, *rng.sample(others, INTENTS_N)]
     rng.shuffle(keys)
     return dict.fromkeys(keys)

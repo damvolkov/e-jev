@@ -25,22 +25,35 @@ import numpy as np
 from e_jev.logic.calibration import Scored, fit_kinds, split_held
 from e_jev.logic.primitives import index_label
 from e_jev.models.calibration import Labeled
-from e_jev.models.systemone import Answer, ChoiceAnswer, NoulAnswer, QuestionKind, ScoreAnswer, SystemOneRequest, SystemOneResponse
+from e_jev.models.systemone import (
+    Answer,
+    Choice,
+    ChoiceAnswer,
+    NoulAnswer,
+    Question,
+    QuestionKind,
+    Score,
+    ScoreAnswer,
+    SystemOneRequest,
+    SystemOneResponse,
+)
 
 EPS = 1e-12
 ENCODER = msgspec.json.Encoder()
 RESPONSE = msgspec.json.Decoder(SystemOneResponse)
 
 
-def scores_of(answer: Answer) -> np.ndarray:
-    """The option scores behind one answer: the probabilities it published, in log space."""
+def scores_of(answer: Answer, question: Question) -> np.ndarray:
+    """The option scores behind one answer: published probabilities, aligned BY KEY to the question, in log space."""
     match answer:
         case NoulAnswer(noul=p):
             probs = np.array([p, 1.0 - p])
-        case ChoiceAnswer(probabilities=published):
+        case ChoiceAnswer(probabilities=published) if isinstance(question, Choice):
+            probs = np.array([published.get(name, 0.0) for name in question.criteria])
+        case ScoreAnswer(probabilities=published) if isinstance(question, Score):
+            probs = np.array([published.get(str(level), 0.0) for level in range(len(question.criteria))])
+        case ChoiceAnswer(probabilities=published) | ScoreAnswer(probabilities=published):
             probs = np.array(list(published.values()))
-        case ScoreAnswer(probabilities=published):
-            probs = np.array([published[str(level)] for level in range(len(published))])
     return np.log(np.clip(probs, EPS, None))
 
 
@@ -103,9 +116,7 @@ class Backend:
             sources = sorted({source for source, _ in times})
             out[f"c{conc}"] = {
                 "overall": percentile([value for _, value in times]),
-                "per_source": {
-                    source: percentile([value for item, value in times if item == source]) for source in sources
-                },
+                "per_source": {source: percentile([value for item, value in times if item == source]) for source in sources},
                 "throughput": len(times) / wall,
             }
         return out
@@ -120,12 +131,11 @@ def scored_rows(answers: Sequence[tuple[Labeled, Answer] | None]) -> list[Scored
         Scored(
             kind=QuestionKind.of(sample.question),
             source=sample.source,
-            scores=scores_of(answer),
+            scores=scores_of(answer, sample.question),
             label=index_label(sample.question, sample.label),
             held=split_held(msgspec.json.encode([sample.state, sample.question])),
         )
-        for sample, answer in answers
-        if answer is not None
+        for sample, answer in (pair for pair in answers if pair is not None)
     ]
 
 
@@ -150,11 +160,7 @@ def sample_slice(pairs: Sequence[tuple[Labeled, Answer]], per_kind: int) -> list
 
 
 async def run(config: str, base_url: str, files: Sequence[Path], args: argparse.Namespace) -> dict[str, Any]:
-    samples = [
-        sample
-        for file in files
-        for sample in msgspec.json.Decoder(Labeled).decode_lines(await asyncio.to_thread(file.read_bytes))
-    ]
+    samples = [sample for file in files for sample in msgspec.json.Decoder(Labeled).decode_lines(await asyncio.to_thread(file.read_bytes))]
     backend = Backend(base_url, args.model, args.timeout)
     try:
         answers = await backend.read_all(samples, args.concurrency)
