@@ -30,5 +30,8 @@ async def models(settings: NamedDependency[Settings]) -> ModelList:
 
 ROUTES: Final[tuple[HTTPRouteHandler, ...]] = (
     post("/v1/systemone", name="systemone.evaluate", guards=[bearer], status_code=200)(evaluate),
+    ### Some open clients (pg-jev) join their base URL without the version prefix: same handler, bare path.
+    post("/systemone", name="systemone.evaluate_bare", guards=[bearer], status_code=200)(evaluate),
     get("/v1/models", name="systemone.models", guards=[bearer])(models),
+    get("/models", name="systemone.models_bare", guards=[bearer])(models),
 )
