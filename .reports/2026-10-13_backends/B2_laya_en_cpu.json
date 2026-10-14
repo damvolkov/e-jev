@@ -1,0 +1,362 @@
+{
+  "config": "B2_laya_en_cpu",
+  "base_url": "http://127.0.0.1:45163",
+  "timestamp": "2026-10-14T11:08:19+0200",
+  "model_requested": "english",
+  "rows": {
+    "total": 1200,
+    "answered": 1200,
+    "failed": 0
+  },
+  "fit": {
+    "temperatures": {
+      "choice": 0.8967562919282559,
+      "choice_wide": 6.7307843656541815,
+      "noul": 1.2389894458883977,
+      "score": 2.8145365032508916
+    },
+    "ece_before": {
+      "choice": 0.0414213442904679,
+      "choice_wide": 0.5227920021689457,
+      "noul": 0.11182797202794399,
+      "score": 0.3188328947162048
+    },
+    "ece_after": {
+      "choice": 0.04009014525257659,
+      "choice_wide": 0.09588294733889033,
+      "noul": 0.10575471214593425,
+      "score": 0.0733414943284944
+    },
+    "accuracy": {
+      "ag_news": 0.9235668789808917,
+      "banking77": 0.36774193548387096,
+      "boolq": 0.7062937062937062,
+      "sst5": 0.33986928104575165
+    }
+  },
+  "latency": {
+    "c1": {
+      "p50": 0.13834246949409135,
+      "p95": 0.8523893966776083,
+      "per_source": {
+        "ag_news": {
+          "p50": 0.14237457400304265,
+          "p95": 0.1554939864494372,
+          "n": 30
+        },
+        "banking77": {
+          "p50": 0.5870292045001406,
+          "p95": 1.6067275522713311,
+          "n": 30
+        },
+        "boolq": {
+          "p50": 0.13341571699129418,
+          "p95": 0.18301340831385457,
+          "n": 30
+        },
+        "sst5": {
+          "p50": 0.10669889603741467,
+          "p95": 0.11977568165166304,
+          "n": 30
+        }
+      },
+      "throughput": 3.484054996125419
+    },
+    "c16": {
+      "p50": 3.5414361630100757,
+      "p95": 9.345914238868863,
+      "per_source": {
+        "ag_news": {
+          "p50": 3.939091651001945,
+          "p95": 5.372581151410122,
+          "n": 30
+        },
+        "banking77": {
+          "p50": 8.932232306018705,
+          "p95": 9.499069664391573,
+          "n": 30
+        },
+        "boolq": {
+          "p50": 2.2386670795094687,
+          "p95": 2.6237131651199888,
+          "n": 30
+        },
+        "sst5": {
+          "p50": 2.376474002492614,
+          "p95": 8.311723273422102,
+          "n": 30
+        }
+      },
+      "throughput": 3.6301199636827137
+    },
+    "c32": {
+      "p50": 1.0829922925040592,
+      "p95": 1.8995497995056212,
+      "per_source": {
+        "ag_news": {
+          "p50": 1.7383818899979815,
+          "p95": 1.7383818899979815,
+          "n": 1
+        },
+        "boolq": {
+          "p50": 1.0286057390039787,
+          "p95": 1.9057809840072877,
+          "n": 15
+        }
+      },
+      "throughput": 8.014991456341564
+    }
+  },
+  "failures": [
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "boolq",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "ag_news",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "banking77",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "banking77",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "banking77",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "banking77",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "banking77",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "banking77",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://127.0.0.1:45163/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+ "invoice_processing": 0.08333333333333333,
+ "customer_service": 0.05555555555555555,
+ "agent_trace_observability": 0.4583333333333333,
+ "security_incidents": 0.08333333333333333,
+ "mean": 0.1701388888888889
+}

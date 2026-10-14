@@ -64,9 +64,9 @@ WorkflowEvals with `scripts/evals_bakeoff.sh`, scored by the harness's own conse
 | **B2** laya-english CPU | — | 0.71 / 0.92 / 0.37 / 0.34 | en-only by design | 0.106 | 0.85 | 1.90 | 8.0 | — | 3.2 |
 | **B-cuda** laya both checkpoints | — | 0.59 / 0.93 / 0.34 / 0.24 | 0.50 / 0.44 / 0.73 / 0.48 | 0.256 | 0.03 | 0.39 | 38.1 | ~1.5 | — |
 | **C1** Clef-Flash Q4_K_M | **0.639** | 0.87 / 0.91 / 0.96 / 0.63 | 0.95 / 0.93 / 0.83 / 0.73 | 0.070 | 0.10 | 2.87 | 20.6 | 6.9 (32k); 17.7 at 49k | 2.2 |
-| **C2** Clef-Flash Q8_0 | — | 0.87 / 0.90 / 0.96 / 0.62 | 0.95 / 0.92 / 0.84 / 0.73 | 0.068 | 0.12 | 3.22 | 17.7 | ~11.4 | — |
+| **C2** Clef-Flash Q8_0 | — | 0.87 / 0.90 / 0.96 / 0.62 | 0.95 / 0.92 / 0.84 / 0.73 | 0.068 | 0.12 | 3.22 | 17.7 | 9.3 | — |
 | **D** jevos-v4 OpenVINO INT8 | — | 0.72 / 0.75 / ✗>10 opts / 0.45 | 0.48 / ✗ / 0.85 / 0.51 | 0.096 | 0.12 | 3.01 | 14.1 | — | 1.7 |
-| **E1** Kev-0.8b | (pending) | 0.84 / 0.89 / 0.83 / 0.52 † | 0.70 / 0.65 / 0.77 / 0.65 | 0.073 | 0.03 | 0.39 | 126.1 | 4.3 | 0.1 |
+| **E1** Kev-0.8b | 0.170 | 0.84 / 0.89 / 0.83 / 0.52 † | 0.70 / 0.65 / 0.77 / 0.65 | 0.073 | 0.03 | 0.39 | 126.1 | 4.3 | 0.1 |
 
 † Kev trained on BoolQ / AG News / Banking77 / SST-5: their accuracies describe memorisation, not skill —
 only WorkflowEvals counts for E1. Memory: per-process GPU high-water from `nvidia-smi` sampling and
@@ -85,7 +85,7 @@ only WorkflowEvals counts for E1. Memory: per-process GPU high-water from `nvidi
   sst5 0.24): zero VRAM and 18 dec/s, but below the bar everywhere except 4-label choice. It is not the
   default; it stays a candidate route once fine-tuned heads exist (§6 distillation).
 - **jevos**: 1.7 GB RAM, 28 ms answers, but English ≤10-option choice only (422 beyond) and below the bar.
-  Kev-0.8b is the throughput champion (126 dec/s, 3.8 GB) with real quality (E1's evals pending).
+  Kev-0.8b is the throughput champion (126 dec/s, 3.8 GB) with real quality (measured (0.170)).
 - **The decision-head batch constraint.** Clef's joint head needs the *whole* input in one batch: at
   `-ub 4096` it answers the calibration sets (≤2 k tokens) in 0.1 s, but WorkflowEvals' invoice states
   (24.5–37 k tokens) fail outright unless `-ub` ≥ the prompt and `-c` ≥ 49 k — at which point C1 costs
@@ -97,4 +97,11 @@ only WorkflowEvals counts for E1. Memory: per-process GPU high-water from `nvidi
   states > 32 k tokens → `reading`; `extract` → `reading` alone. With C1 as default and vLLM kept for the
   teacher and long context, co-residence at 0.93+6.9 GB is impossible on one card: **until the distillation
   loop makes fine-tuned CPU heads usable, e-jev 2 runs C1 *instead of* the 27B by default** — the reader
-  stays deployed, started on demand (`systemctl --user start vllm jev` today, a route in settings tomorrow).
+  stays deployed, started on demand (`make gpu-teach` / `make gpu-decide`).
+- **Kev-0.8b** holds 4.3 GB and 126 dec/s with clean ECE — the throughput champion whose calibration-set
+  scores are meaningless (in its training data, †) and whose WorkflowEvals 0.170 is below the bar: fast,
+  not yet good. A fine-tuning base for §6, not a default.
+
+Pareto (memory vs WorkflowEvals mean; C1 dominates every usable point):
+
+![backends](evals/backends.svg)

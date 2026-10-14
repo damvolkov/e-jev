@@ -1,0 +1,353 @@
+{
+  "config": "D_jevos_cpu",
+  "base_url": "http://127.0.0.1:45162",
+  "timestamp": "2026-10-14T11:00:39+0200",
+  "model_requested": "jev-latest",
+  "rows": {
+    "total": 1200,
+    "answered": 900,
+    "failed": 300
+  },
+  "fit": {
+    "temperatures": {
+      "choice": 1.2340079938504165,
+      "noul": 2.8756752497944884,
+      "score": 1.2515437118383532
+    },
+    "ece_before": {
+      "choice": 0.14965196995240637,
+      "noul": 0.20204100581435858,
+      "score": 0.11733633036481553
+    },
+    "ece_after": {
+      "choice": 0.09599611818392788,
+      "noul": 0.06547139033211014,
+      "score": 0.09091433620192142
+    },
+    "accuracy": {
+      "ag_news": 0.7515923566878981,
+      "boolq": 0.7202797202797203,
+      "sst5": 0.45098039215686275
+    }
+  },
+  "latency": {
+    "c1": {
+      "p50": 0.07290599148836918,
+      "p95": 0.11899121328024194,
+      "per_source": {
+        "ag_news": {
+          "p50": 0.10328229100559838,
+          "p95": 0.1365651330066612,
+          "n": 30
+        },
+        "boolq": {
+          "p50": 0.05921880298410542,
+          "p95": 0.0925225560000399,
+          "n": 30
+        },
+        "sst5": {
+          "p50": 0.06783077103318647,
+          "p95": 0.09228838886483572,
+          "n": 30
+        }
+      },
+      "throughput": 12.365214339509661
+    },
+    "c16": {
+      "p50": 1.1120342040085234,
+      "p95": 1.6861500719358447,
+      "per_source": {
+        "ag_news": {
+          "p50": 1.4193151560320985,
+          "p95": 1.7316135830071289,
+          "n": 30
+        },
+        "boolq": {
+          "p50": 0.5974104195192922,
+          "p95": 0.8603963050845778,
+          "n": 30
+        },
+        "sst5": {
+          "p50": 1.2148517024761532,
+          "p95": 1.5719149029639077,
+          "n": 30
+        }
+      },
+      "throughput": 14.174827264724403
+    },
+    "c32": {
+      "p50": 2.2678374749957584,
+      "p95": 3.0148288344964387,
+      "per_source": {
+        "ag_news": {
+          "p50": 2.316165563010145,
+          "p95": 3.0111288001382492,
+          "n": 30
+        },
+        "boolq": {
+          "p50": 0.910149100527633,
+          "p95": 1.7608953969960566,
+          "n": 30
+        },
+        "sst5": {
+          "p50": 2.58681167953182,
+          "p95": 3.0228493541770147,
+          "n": 30
+        }
+      },
+      "throughput": 14.127803724129171
+    }
+  },
+  "failures": [
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    },
+    {
+      "source": "banking77",
+      "status": 422,
+      "error": "Client error '422 Unprocessable Content' for url 'http://127.0.0.1:45162/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422"
+    }
+  ]
+}

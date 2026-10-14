@@ -1,0 +1,291 @@
+{
+  "config": "B1_laya_multi_cuda",
+  "base_url": "http://localhost:45166",
+  "timestamp": "2026-10-14T10:53:46+0200",
+  "model_requested": "multilingual",
+  "rows": {
+    "total": 2400,
+    "answered": 2400,
+    "failed": 0
+  },
+  "fit": {
+    "temperatures": {
+      "choice": 2.1999728606090536,
+      "choice_wide": 5.101567010157443,
+      "noul": 2.4358267405293113,
+      "score": 8.340914574742559
+    },
+    "ece_before": {
+      "choice": 0.13238984947533394,
+      "choice_wide": 0.2738982804350983,
+      "noul": 0.16876744966442933,
+      "score": 0.4606923014384355
+    },
+    "ece_after": {
+      "choice": 0.06107713625183369,
+      "choice_wide": 0.2562350797273173,
+      "noul": 0.04156337188263609,
+      "score": 0.08788208806237986
+    },
+    "accuracy": {
+      "ag_news": 0.9299363057324841,
+      "banking77": 0.3419354838709677,
+      "boolq": 0.5874125874125874,
+      "massive_intent_es": 0.44,
+      "massive_intent_es20": 0.4967741935483871,
+      "sst5": 0.24183006535947713,
+      "tweets_sentiment_es": 0.4810126582278481,
+      "xnli_es": 0.7290322580645161
+    }
+  },
+  "latency": {
+    "c1": {
+      "p50": 0.02762873299070634,
+      "p95": 0.03247278608905617,
+      "per_source": {
+        "massive_intent_es": {
+          "p50": 0.030191092024324462,
+          "p95": 0.03283895745989866,
+          "n": 12
+        },
+        "massive_intent_es20": {
+          "p50": 0.029281205468578264,
+          "p95": 0.030269989886437542,
+          "n": 12
+        },
+        "sst5": {
+          "p50": 0.02885112294461578,
+          "p95": 0.034380182338645676,
+          "n": 7
+        },
+        "tweets_sentiment_es": {
+          "p50": 0.027595221006777138,
+          "p95": 0.028948995983228087,
+          "n": 5
+        },
+        "xnli_es": {
+          "p50": 0.008549334976123646,
+          "p95": 0.009749785251915454,
+          "n": 12
+        }
+      },
+      "throughput": 46.57277050827967
+    },
+    "c16": {
+      "p50": 0.41181829050765373,
+      "p95": 0.43871580417617223,
+      "per_source": {
+        "massive_intent_es": {
+          "p50": 0.42691339954035357,
+          "p95": 0.4409057597600622,
+          "n": 12
+        },
+        "massive_intent_es20": {
+          "p50": 0.40583760300069116,
+          "p95": 0.4238331276428653,
+          "n": 12
+        },
+        "sst5": {
+          "p50": 0.41678973304806277,
+          "p95": 0.43207923138397747,
+          "n": 7
+        },
+        "tweets_sentiment_es": {
+          "p50": 0.4242284339852631,
+          "p95": 0.4281439011800103,
+          "n": 5
+        },
+        "xnli_es": {
+          "p50": 0.2053309975308366,
+          "p95": 0.4109454649442341,
+          "n": 12
+        }
+      },
+      "throughput": 38.541401681447354
+    },
+    "c32": {
+      "p50": 0.24324950849404559,
+      "p95": 0.39465012250002474,
+      "per_source": {
+        "massive_intent_es": {
+          "p50": 0.3163076275086496,
+          "p95": 0.35321959434950256,
+          "n": 2
+        },
+        "massive_intent_es20": {
+          "p50": 0.3174703900003806,
+          "p95": 0.40915074350778013,
+          "n": 6
+        },
+        "xnli_es": {
+          "p50": 0.13322435499867424,
+          "p95": 0.2624689999473048,
+          "n": 8
+        }
+      },
+      "throughput": 38.12203534536218
+    }
+  },
+  "failures": [
+    {
+      "source": "massive_intent_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es20",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es20",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es20",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es20",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es20",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "xnli_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "xnli_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "xnli_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es20",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "xnli_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "sst5",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "massive_intent_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "sst5",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "sst5",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "sst5",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "sst5",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "sst5",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "tweets_sentiment_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "tweets_sentiment_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "tweets_sentiment_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "tweets_sentiment_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "sst5",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    },
+    {
+      "source": "tweets_sentiment_es",
+      "status": 503,
+      "error": "Server error '503 Service Unavailable' for url 'http://localhost:45166/v1/systemone'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503"
+    }
+  ]
+}
