@@ -24,9 +24,9 @@ async def _gpu_apps() -> dict[int, int]:
     out, _ = await proc.communicate()
     apps: dict[int, int] = {}
     for line in out.decode().splitlines():
-        match re.match(r"^\s*(\d+)\s*,\s*(\d+)", line):
-            case [_, pid, mib]:
-                apps[int(pid)] = int(mib) * 1024 * 1024
+        if match := re.match(r"^\s*(\d+)\s*,\s*(\d+)", line):
+            pid, mib = match.groups()
+            apps[int(pid)] = int(mib) * 1024 * 1024
     return apps
 
 

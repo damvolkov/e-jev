@@ -20,6 +20,7 @@ DIR="$REPO/.cache/workflowevals"
 git -C "$DIR" checkout -q "$REV"
 cd "$DIR" && uv sync --locked -q
 
+rm -rf "$DIR/runs/invoice_processing/$CONFIG" "$DIR/runs/customer_service/$CONFIG" "$DIR/runs/agent_trace_observability/$CONFIG" "$DIR/runs/security_incidents/$CONFIG"
 for w in invoice_processing customer_service agent_trace_observability security_incidents; do
   TYPESAFE_API_KEY=local uv run python run.py "$w" --base-url "$BASE" --name "$CONFIG" --limit "$LIMIT" --workers 2 >/dev/null 2>&1 || echo "$w failed"
 done
@@ -39,9 +40,8 @@ for workflow, metric in (
     ("security_incidents", "exact"),
 ):
     bundle = combine([Path(f"runs/{workflow}/{config}")], "consensus", published_runs(workflow))
-    points = workflow_points(bundle, metric, "time", None)
-    ours = next((p.y for p in points if p.model.name == config), None)
-    scores[workflow] = ours
+    points = [p for p in workflow_points(bundle, metric, "time", None) if p.y is not None]
+    scores[workflow] = points[0].y if points else None
 scores["mean"] = sum(v for v in scores.values() if v is not None) / max(1, sum(1 for v in scores.values() if v is not None))
 Path(out).write_text(json.dumps(scores, indent=1))
 print(json.dumps(scores))

@@ -113,10 +113,14 @@ class Backend:
                 tasks = [group.create_task(one(sample)) for sample in samples]
             wall = time.perf_counter() - started
             times = [value for value in (task.result() for task in tasks) if value is not None]
+            values = [value for _, value in times]
             sources = sorted({source for source, _ in times})
             out[f"c{conc}"] = {
-                "overall": percentile([value for _, value in times]),
-                "per_source": {source: percentile([value for item, value in times if item == source]) for source in sources},
+                "p50": float(np.percentile(values, 50)) if values else None,
+                "p95": float(np.percentile(values, 95)) if values else None,
+                "per_source": {
+                    source: percentile([value for item, value in times if item == source]) for source in sources
+                },
                 "throughput": len(times) / wall,
             }
         return out
