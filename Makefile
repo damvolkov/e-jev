@@ -10,6 +10,7 @@ EVALS_LIMIT ?= 12
 JEV_URL ?= http://localhost:45160
 CALIBRATION_SET ?= .cache/labeled.jsonl
 CALIBRATION_SIZE ?= 300
+JEV_TEST_BODY ?= {"model":"jev-latest","state":"Me han cobrado dos veces la factura de marzo. Quiero el reembolso o cancelo.","questions":{"dep":{"type":"choice","instructions":"¿Qué equipo lo gestiona?","criteria":{"billing":"facturas, pagos","tech":"errores","sales":"precios"}},"urgente":{"type":"noul","instructions":"¿es urgente?"},"enfadado":{"type":"score","instructions":"¿Qué tan enfadado está el cliente?","criteria":["calmado","molesto","furious"]}}}
 EVALS_DIR := .cache/workflowevals
 WORKFLOWS := invoice_processing customer_service agent_trace_observability security_incidents
 ARGS      = $(filter-out $(firstword $(MAKECMDGOALS)),$(MAKECMDGOALS))
@@ -25,7 +26,7 @@ SHELL := bash
 MAKEFLAGS += --no-print-directory
 
 ##### TARGETS #####
-.PHONY: help sync lint type arch test integration graph evals check build deploy ui watch restart status logs calibrate
+.PHONY: help sync lint type arch test integration graph evals jev-test check build deploy ui watch restart status logs calibrate
 
 help:
 	@printf "$(BOLD)$(CYAN)$(PROJECT)$(RESET) $(GRAY)· typed decisions over vLLM · compose + systemd --user$(RESET)\n\n"
@@ -48,6 +49,10 @@ test: ## pytest
 
 integration: ## live tests against JEV_URL (default http://localhost:45160): the triage graph through Pydantic AI
 	@uv run pytest -m integration $(ARGS)
+
+jev-test: ## the service in one shot: ready, one noul + one choice + one score, timed (JEV_URL)
+	@curl -fsS $(JEV_URL)/ready >/dev/null && printf "$(GREEN)✓ ready$(RESET) "
+	@body=$$(mktemp); t0=$$(date +%s%N); curl -fsS -o $$body -X POST $(JEV_URL)/v1/systemone -H 'content-type: application/json' -d '$(JEV_TEST_BODY)'; ms=$$(( ( $$(date +%s%N) - t0 ) / 1000000 )); command -v jq >/dev/null && jq . $$body || cat $$body; rm -f $$body; printf "$(GRAY)· %s ms · $(JEV_URL)$(RESET)\n" "$$ms"
 
 graph: ## run the triage graph on one ticket: make graph "text"
 	@PYDANTIC_AI_NO_BANNER=1 uv run python -m examples.triage.graph "$(ARGS)"
