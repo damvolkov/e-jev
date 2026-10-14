@@ -1,34 +1,57 @@
 # e-jev
 
 A self-hosted [Jev](https://docs.typesafe.ai): TypeSafe's System One API — typed, calibrated decisions
-instead of text — served from your own GPU through vLLM. Wire-compatible with the official
-`typesafe-sdk`, `@typesafe-ai/sdk` and the TypeSafe n8n node: point their base URL here.
+instead of text. Two decision paths behind one contract, sized to your GPU:
 
-No text is generated. Each question is one forward pass per option order; the exact logprobs of the
-option letters (`logprob_token_ids`) are renormalized over your options, so nothing outside them can
-win. The state prefix is shared across questions by vLLM's prefix cache. Confidence follows
-TypeSafe's reference definitions.
+- **Clef-Flash** (Cloudflare, Apache-2.0): a trained decision model — one forward, every option scored
+  jointly. 6.9 GB, noul p50 38 ms, 20.6 decisions/s, and it *beats* the generative path on quality
+  (WorkflowEvals 0.639 vs 0.573, Banking77 0.961, Spanish intents 0.93–0.95).
+- **The reader**: exact option-letter logprobs of a generative model (a Qwen served by vLLM),
+  renormalized over your options — the teacher: calibrated, long-context, and the only extractor.
 
-## Services
+Wire-compatible with the official `typesafe-sdk`, `@typesafe-ai/sdk`, the TypeSafe n8n node, jevgrep and
+pg-jev: point their base URL here. No text is generated on the decision path; confidence follows
+TypeSafe's reference definitions; every answer is calibrated per (backend, question kind).
 
-| Service | Port | Unit | Role |
-|---|---|---|---|
-| vllm | 45100 | `vllm.service` | `cyankiwi/Qwen3.6-27B-AWQ-INT4` served as `qwen3.6-27b` |
-| jev | 45160 | `jev.service` | System One API |
-| n8n | 45700 | `n8n.service` | optional UI: official TypeSafe node wired to jev |
-| phoenix | 45900 | `phoenix.service` | traces: every evaluation, question, readout and vLLM request, one trace |
+## Install
 
-Compose dirs live in `~/.config/compose/<service>`, data in `~/.config/compose/data/<service>`.
+    docker pull ghcr.io/damvolkov/e-jev:latest
+    docker run -d --name jev -p 45160:45160 --network e-core ghcr.io/damvolkov/e-jev:latest
 
-    make deploy    # build jev, install + enable + restart vllm and jev
-    make ui        # n8n + official node + credential on jev + demo workflow
-    make watch     # Phoenix: traces UI and OTLP sink for jev and vllm
-    make status    # systemd + container health
+With Clef on the same machine (the default decision backend — its model downloads on first run):
+
+    docker run -d --name clef --gpus all -p 45164:8080 \
+      -v ./clef-cache:/home/app/.cache/llama.cpp --network e-core \
+      --entrypoint /bin/sh ghcr.io/ggml-org/llama.cpp:server-cuda -c \
+      'exec /app/llama-server -hf ggml-org/Clef-Flash-GGUF:Q4_K_M --host 0.0.0.0 --port 8080 -c 32768 -ngl 99 -b 32768 -ub 4096'
+
+and tell jev the fleet: `JEV_BACKENDS='[{"id":"clef","kind":"systemone","url":"http://clef:8080"}]'`
+(`JEV_ROWS` optionally orders routes per question kind; the first reachable route that fits the shape
+answers, failures fall down the row).
+
+For this machine, `make deploy` installs everything as systemd --user units under `~/.config/compose`:
+
+| Service | Port | Role |
+|---|---|---|
+| jev | 45160 | System One API — routing, calibration, traces |
+| clef | 45164 | Clef-Flash Q4_K_M (llama.cpp, GGUF self-downloads) |
+| vllm | 45100 | Qwen3.6-27B AWQ — teacher: `extract`, states > ~4k tokens, distillation |
+| n8n / phoenix | 45700 / 45900 | optional UI and traces |
+
+One 24 GB card holds clef (6.9) **or** the 27B teacher (21.6), not both:
+
+    make gpu-decide   # clef + jev — the serving default
+    make gpu-teach    # vllm + jev — extraction, long context, refitting
+
+A backend that is down degrades to a failing route: the fleet boots and serves what it can; `/ready`
+reports the survivors. `JEV_DECISION_LOG` records every answered question (state, scores, backend) as
+JSONL — the corpus the distillation loop trains faster heads from.
 
 ## API
 
-`POST /v1/systemone` — the TypeSafe contract: `state` (string, object or array), `model`, and a map of
-questions of type `noul`, `choice` (≤26 options) or `score` (≤10 levels).
+`POST /v1/systemone` (bare `/systemone` too — open clients join without the prefix) — the TypeSafe
+contract: `state` (string, object or array), `model`, and a map of questions of type `noul`, `choice`
+(≤255 options) or `score` (≤10 levels).
 
     curl -s localhost:45160/v1/systemone -H 'content-type: application/json' -d '{
       "state": "Help! My payouts have been failing for 3 days.",
@@ -40,105 +63,57 @@ questions of type `noul`, `choice` (≤26 options) or `score` (≤10 levels).
         "frustration": {"type": "score", "instructions": "How frustrated is the customer?", "criteria": ["Calm", "Frustrated", "Very angry"]}
       }}'
 
-`GET /v1/models` — `jev-latest` plus the served model. Any `model` in a request is answered by it.
-
-`POST /v1/extract` — beyond Jev: typed values through Outlines. `{"state", "instructions", "schema"}`
-→ JSON matching the schema.
-
-Official SDK:
+`GET /v1/models` — the fleet's names. `POST /v1/extract` — beyond Jev: typed values through the teacher.
+Capacity answers 429/529 (what the official SDKs retry), never 502.
 
     from typesafe_sdk import Choice, TypeSafeClient
     client = TypeSafeClient(api_key="local", base_url="http://localhost:45160")
 
+`ejev-mcp` (also `src/e_jev/mcp.py`) mounts the same decisions as MCP tools — noul, choice, score,
+models — for Claude Code, OpenCode and OpenHuman over stdio.
+
 ## CLI
 
-`ejev` asks any System One endpoint — this e-jev or TypeSafe's Jev — from the terminal, on the e-cli shape
-(two tables, lazy commands, typed injection, exit codes per failure). Tables with probability bars by
-default, the raw response with `--json`.
+`ejev` asks any System One endpoint — this e-jev or TypeSafe's Jev — from the terminal:
 
     ejev noul "Is this urgent?" --state "Checkout is down, we lose orders"
     ejev choice "Which team?" "billing=Charges, refunds" "technical=Bugs" sales --state @ticket.txt
-    ejev score "How angry?" Calm Annoyed Furious --state "Third time I write. Unacceptable."
-    ejev --json ask request.json          # a full TypeSafe body: any mix of questions
-    ejev models
-    ejev --url https://api.typesafe.ai --key $TYPESAFE_API_KEY noul ...   # the real Jev
+    ejev --json ask request.json
+    ejev calibrate .cache/labeled.jsonl --backend clef   # per-backend fit, merged into the file
 
-Defaults come from `JEV_CLI_URL`, `JEV_CLI_KEY`, `JEV_CLI_MODEL`. With `JEV_OTLP_ENDPOINT` set, each run is
-traced from the terminal down to vLLM in Phoenix. Exit codes: 2 bad input, 3 endpoint failure.
+## Consumers verified
 
-## Graphs
-
-`examples/triage/graph.py` is a support-ticket triage built on Pydantic AI's TypeSafe model and
-pydantic-graph: typed output models become System One questions (`bool` → noul, `StrEnum` of 30 areas →
-choice, `IntEnum` with a docstring per level → score), and code routes on the answers. It runs unchanged
-against e-jev or TypeSafe's Jev (`JEV_URL`).
-
-    make graph "Our SAML login with Okta fails for every user"
-    make integration      # the graph against the live endpoint, 6 cases
-
-```mermaid
----
-title: triage
----
-stateDiagram-v2
-  screen
-  state decision <<choice>>
-  classify
-  discard
-  route
-
-  [*] --> screen
-  screen --> decision
-  decision --> classify: customer
-  decision --> discard: spam
-  classify --> route
-  discard --> [*]
-  route --> [*]
-```
+`examples/triage/graph.py` (Pydantic AI + pydantic-graph) — `make integration` and `make graph`;
+n8n's official TypeSafe node — `make ui`; **jevgrep**: `jg auth --provider custom --base-url
+http://localhost:45160/v1 --model jev-latest`, semantic search in ~2 s at its own c32; **pg-jev**:
+`SET jev.api_url='http://jev:45160/v1/systemone'` inside Postgres (the setting takes the full endpoint) (plpython3u).
 
 ## Calibrate
 
-    make calibrate                 # builds 1,200 public examples, fits, restarts jev
-    make calibrate mine.jsonl      # or your own labeled set
-
-One temperature per question kind, fitted on a stable half of the examples; every reported number comes
-from the other, held-out half. The default set: BoolQ (noul), AG News (choice, 4), Banking77 (choice, 77 —
-through the trie), SST-5 (score, 5 levels). Measured on 608 held-out examples (2026-10-01):
-
-| kind | temperature | ECE before | ECE after |
-|---|---|---|---|
-| noul | 2.46 | 0.108 | **0.053** |
-| score | 2.19 | 0.248 | **0.120** |
-| choice (≤26, letters) | 2.80 | 0.091 | **0.068** |
-| choice_wide (>26, trie) | 1.69 | 0.095 | 0.102 |
-
-Accuracy on the same held-out half: AG News 89.8 %, Banking77 79.4 % (77-way), BoolQ 88.1 %, SST-5 54.2 %.
-The raw model is overconfident everywhere it reads letters, and calibration cuts that error by a quarter to
-a half; wide choices, read through the trie, are already near their best. A temperature is fitted to the
-data it saw: decisions that compare probabilities to thresholds tuned for Jev's own calibration move with
-it (see [docs/evals.md](docs/evals.md)), so calibrate on your own questions before trusting thresholds.
-A fit is bound to the model and
-`JEV_PERMUTATIONS`; change either and jev ignores it until you refit.
+One temperature per **(backend, kind)** — thresholds do not transfer across backends. `make calibrate`
+fits the teacher, `ejev calibrate --backend clef` the decision model; the default set is BoolQ, AG News,
+Banking77 (77-way), SST-5 plus a Spanish set (MASSIVE es-ES, XNLI es, tweet sentiment), each example in a
+stable half: fit or held out. Every number reported comes from the held-out half. The bake-off table —
+all measured candidates, quality and memory — lives in [docs/evals.md](docs/evals.md).
 
 ## Tuning
 
-vllm: `VLLM_MODEL`, `VLLM_SERVED_NAME`, `VLLM_GPU_UTIL` (0.93), `VLLM_MAX_MODEL_LEN` (20480), `VLLM_MAMBA_BLOCK` (256),
-`VLLM_SSM_DTYPE` (bfloat16: 33 % faster on long states, probability drift p95 0.0066; float32 is exact),
-`VLLM_KV_DTYPE` (fp8), `VLLM_MAX_SEQS` (16), `VLLM_MAX_BATCHED` (2048), `VLLM_API_KEY`.
-jev: `JEV_PERMUTATIONS` (1; 2 asks both option orders, removing position bias at ~2x cost),
-`JEV_CONCURRENCY` (16), `JEV_API_KEY` (unset accepts any bearer key), `JEV_TRIE_EPSILON` (1e-4),
-`JEV_OTLP_ENDPOINT` (unset disables tracing).
+je v: `JEV_BACKENDS` / `JEV_ROWS` (JSON: the fleet and its preference rows), `JEV_PERMUTATIONS` (1; 2
+averages both option orders on the reader), `JEV_CONCURRENCY` (16), `JEV_API_KEY`, `JEV_CALIBRATION`,
+`JEV_DECISION_LOG`, `JEV_OTLP_ENDPOINT`. clef: `CLEF_CTX` (32768), `CLEF_UBATCH` (4096 — the decision
+head needs the whole prompt in one batch), `CLEF_BATCH`. vllm: `VLLM_MODEL`, `VLLM_MAX_MODEL_LEN`
+(32768 = TypeSafe's contract ceiling), `VLLM_GPU_UTIL` (0.93).
 
 ## Benchmark
 
-TypeSafe's WorkflowEvals against e-jev, scored against the published Jev and LLM runs on the same cases:
-on par with Jev on a 48-case sample (mean agreement 0.61 vs 0.58), 10–90× slower. See
-[docs/evals.md](docs/evals.md); reproduce with `make evals`.
+Against TypeSafe's published runs on the same cases: the decision model is not merely cheaper than the
+generative reader — it is **better** (0.639 vs 0.573 vs Jev's 0.583), at ⅓ the VRAM and 5× the speed.
+Reproduce with `make evals`; the full bake-off: `docs/evals.md` and `.reports/`.
 
 ## Differences from Jev
 
-- Choice above 26 options reads numbered labels through a token trie, best-first within a total-variation budget
-  `JEV_TRIE_EPSILON` (1e-4; 0 is exact). 255 options take ~3.5 s on one RTX 4090; ≤26 is a single pass.
-- `usage.output_tokens` counts forward passes, one per question and option order.
-- Context is 20k tokens per request on one 4090; Jev takes 32k for the state plus the longest question.
-- Probabilities come from a general instruct model; `make calibrate` fits them, per question kind.
+- Long states (> ~4k tokens at default `CLEF_UBATCH`) route to the reader, which pays the generative
+  model's latency; Jev's own budget is not published.
+- `usage.output_tokens` counts forward passes on the reader, server-reported usage elsewhere.
+- Probabilities come from the trained decision model or a general instruct model; calibrate per backend
+  before trusting thresholds tuned on Jev's.
