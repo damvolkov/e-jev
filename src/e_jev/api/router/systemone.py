@@ -20,10 +20,14 @@ async def evaluate(data: SystemOneRequest, engine: NamedDependency[Engine]) -> S
 
 
 async def models(settings: NamedDependency[Settings]) -> ModelList:
+    fleet = ", ".join(f"{backend.id}:{backend.kind}" for backend in settings.backends)
+    names = (*settings.aliases, settings.model, *(backend.model or backend.id for backend in settings.backends))
     return ModelList(
         models=tuple(
-            ModelMetadata(name=name, description=f"e-jev: System One readout over {settings.model} on vLLM.", release_date=RELEASED)
-            for name in (*settings.aliases, settings.model)
+            ModelMetadata(
+                name=name, description=f"e-jev: System One over the fleet [{fleet}] — routing per question shape.", release_date=RELEASED
+            )
+            for name in dict.fromkeys(names)
         )
     )
 

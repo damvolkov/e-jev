@@ -25,7 +25,7 @@ async def test_systemone_evaluate_invalid(client: AsyncTestClient, body: dict) -
 
 async def test_systemone_models(client: AsyncTestClient) -> None:
     reply = await client.get("/v1/models")
-    assert [model.name for model in ListModelsResponse.model_validate_json(reply.content).models] == ["jev-latest", "m"]
+    assert [model.name for model in ListModelsResponse.model_validate_json(reply.content).models] == ["jev-latest", "m", "reading"]
 
 
 @pytest.mark.parametrize(("headers", "status"), [({}, 401), ({"authorization": "Bearer x"}, 401), ({"authorization": "Bearer k"}, 200)])

@@ -29,7 +29,8 @@ class Backend(BaseModel, frozen=True):
     kind: BackendKind
     url: str = ""
     api_key: str = "local"
-    model: str = "jev-latest"
+    ### Served model name; unset means the reading backend answers with the vLLM model, the others with their id.
+    model: str | None = None
     languages: tuple[Language, ...] = (Language.ANY,)
     max_options: int = Field(255, ge=2, le=255)
     max_state_tokens: int = Field(262_144, ge=64)

@@ -48,7 +48,7 @@ async def open_decider(stack: AsyncExitStack, spec: Backend, settings: Settings,
             reader = await stack.enter_async_context(VllmReader.open(settings))
             return spec.id, ReadingDecider(
                 reader,
-                spec.model_copy(update={"model": settings.model}),
+                spec.model_copy(update={"model": spec.model or settings.model}),
                 permutations=settings.permutations,
                 concurrency=settings.concurrency,
                 epsilon=settings.trie_epsilon,

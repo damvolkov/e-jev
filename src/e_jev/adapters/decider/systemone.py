@@ -97,7 +97,7 @@ class SystemOneDecider:
 
     async def decide(self, state: str, questions: Mapping[str, Question]) -> Decision:
         """One request for the whole set: the server reads the state once, every question gets its scores."""
-        body: dict[str, Any] = {"model": self._spec.model, "state": state, "questions": questions}
+        body: dict[str, Any] = {"model": self._spec.model or self._spec.id, "state": state, "questions": questions}
         try:
             reply = await self._client.post("/v1/systemone", content=ENCODER.encode(body))
             reply.raise_for_status()

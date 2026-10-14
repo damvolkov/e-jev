@@ -23,7 +23,7 @@ services:
       # question shape and Spanish within its 4k ubatch budget; the reading path (vLLM) is the last resort
       # for long states and the only extractor. gpu-decide stops vllm and keeps clef+jev; gpu-teach the
       # reverse. A backend that is down at open degrades to a failing route — the fleet still serves.
-      - JEV_BACKENDS=[{"id":"clef","kind":"systemone","url":"http://clef:8080","languages":["any"],"max_options":255,"max_state_tokens":4096},{"id":"reading","kind":"reading","url":""}]
+      - JEV_BACKENDS=[{"id":"clef","kind":"systemone","url":"http://clef:8080","model":"clef","languages":["any"],"max_options":255,"max_state_tokens":4096},{"id":"reading","kind":"reading","url":""}]
       - JEV_ROWS={"noul":["clef","reading"],"choice":["clef","reading"],"choice_wide":["clef","reading"],"score":["clef","reading"]}
       - JEV_DECISION_LOG=${JEV_DECISION_LOG:-/data/decisions.jsonl}
     healthcheck:
