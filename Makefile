@@ -3,7 +3,7 @@ PROJECT  ?= e-jev
 IMAGE    ?= ghcr.io/damvolkov/e-jev:latest
 COMPOSE  ?= $(HOME)/.config/compose
 UNITS    ?= $(HOME)/.config/systemd/user
-SERVICES ?= vllm jev
+SERVICES ?= jev vllm clef
 TYPESAFE_NODE ?= @typesafe-ai/n8n-nodes-typesafe-ai@0.9.0
 EVALS_REV ?= 0ac3b8ad845429f0d8e064ecfb2430a47c5a25cb
 EVALS_LIMIT ?= 12
@@ -89,12 +89,22 @@ watch: ## Phoenix: traces UI + OTLP sink for jev and vllm (http://localhost:4590
 	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' phoenix 2>/dev/null)" = healthy ]; do sleep 3; done
 	@printf "$(GREEN)✓ phoenix on http://localhost:45900$(RESET)\n"
 
-restart: ## restart vllm + jev
+gpu-decide: ## default serving pattern: decision model on the card, teacher stopped (clef + jev)
+	@systemctl --user stop vllm.service
+	@systemctl --user start clef.service jev.service
+	@printf "$(GREEN)✓ clef + jev up — make gpu-teach to hand the card back to the 27B$(RESET)\n"
+
+gpu-teach: ## teacher pattern: vLLM on the card for extract/long context/fitting, decision model off
+	@systemctl --user stop clef.service
+	@systemctl --user start vllm.service jev.service
+	@printf "$(GREEN)✓ vllm + jev up$(RESET)\n"
+
+restart: ## restart the fleet
 	@systemctl --user restart $(addsuffix .service,$(SERVICES))
 
 status: ## systemd + container health
 	@systemctl --user --no-pager status $(addsuffix .service,$(SERVICES)) | grep -E '●|Active'
-	@docker ps --filter name='^(vllm|jev)$$' --format '{{.Names}}\t{{.Status}}'
+	@docker ps --filter name='^(vllm|jev|clef)$$' --format '{{.Names}}\t{{.Status}}'
 
 logs: ## follow logs: make logs [vllm|jev]
 	@journalctl --user -fu $(or $(ARGS),jev).service

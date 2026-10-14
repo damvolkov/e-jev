@@ -19,6 +19,13 @@ services:
       - JEV_MODEL=${VLLM_SERVED_NAME:-qwen3.6-27b}
       - JEV_PERMUTATIONS=${JEV_PERMUTATIONS:-1}
       - JEV_OTLP_ENDPOINT=${JEV_OTLP_ENDPOINT:-http://phoenix:6006/v1/traces}
+      # The fleet as decided by the bake-off (docs/evals.md §Decision backends): Clef-Flash answers every
+      # question shape and Spanish within its 4k ubatch budget; the reading path (vLLM) is the last resort
+      # for long states and the only extractor. gpu-decide stops vllm and keeps clef+jev; gpu-teach the
+      # reverse. A backend that is down at open degrades to a failing route — the fleet still serves.
+      - JEV_BACKENDS=[{"id":"clef","kind":"systemone","url":"http://clef:8080","languages":["any"],"max_options":255,"max_state_tokens":4096},{"id":"reading","kind":"reading","url":""}]
+      - JEV_ROWS={"noul":["clef","reading"],"choice":["clef","reading"],"choice_wide":["clef","reading"],"score":["clef","reading"]}
+      - JEV_DECISION_LOG=${JEV_DECISION_LOG:-/data/decisions.jsonl}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:45160/ready')"]
       interval: 30s
