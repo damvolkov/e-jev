@@ -74,3 +74,6 @@
 2026-10-14T10:37:05+0200 start vllm jev (c1 evals3 exit)
 2026-10-14T10:52:17+0200 C1(49k) server ready — full evals
 2026-10-14T10:54:10+0200 C1 FULL EVALS DONE
+2026-10-14T21:35:10+0200 coexist probe: clef load while gemma-4-26B MoE resident @0.83
+2026-10-14T21:35:45+0200 coexist probe: clef OOM vs resident 19.3GB MoE — verdict: no cohabitation on 24GB; swap pattern stands
+2026-10-14T21:53:45+0200 vllm.service stopped: strata (pid 3720652, benchmark del usuario) retiene 20.6 GB — sin solapar con su trabajo
