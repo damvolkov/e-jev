@@ -89,15 +89,26 @@ watch: ## Phoenix: traces UI + OTLP sink for jev and vllm (http://localhost:4590
 	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' phoenix 2>/dev/null)" = healthy ]; do sleep 3; done
 	@printf "$(GREEN)✓ phoenix on http://localhost:45900$(RESET)\n"
 
+strata: ## install the Strata compose dir + unit, never enabled: the card owner is decided by gpu-*
+	@mkdir -p $(COMPOSE)/strata && cp deploy/strata/compose.yml $(COMPOSE)/strata/compose.yml && cp deploy/systemd/strata.service $(UNITS)/strata.service
+	@docker run --rm -v $(COMPOSE)/data:/d busybox sh -c 'mkdir -p /d/strata'
+	@systemctl --user daemon-reload
+	@printf "$(GREEN)✓ strata unit installed (disabled) — make gpu-human to hand it the card$(RESET)\n"
+
 gpu-decide: ## default serving pattern: decision model on the card, teacher stopped (clef + jev)
-	@systemctl --user stop vllm.service
+	@systemctl --user stop vllm.service strata.service
 	@systemctl --user start clef.service jev.service
-	@printf "$(GREEN)✓ clef + jev up — make gpu-teach to hand the card back to the 27B$(RESET)\n"
+	@printf "$(GREEN)✓ clef + jev up — make gpu-teach for the vLLM teacher, gpu-human for Strata chat$(RESET)\n"
 
 gpu-teach: ## teacher pattern: vLLM on the card for extract/long context/fitting, decision model off
-	@systemctl --user stop clef.service
+	@systemctl --user stop clef.service strata.service
 	@systemctl --user start vllm.service jev.service
 	@printf "$(GREEN)✓ vllm + jev up$(RESET)\n"
+
+gpu-human: ## Strata on the card: 125B chat for webui/coders/cortexdb; jev stays up, its GPU routes degrade by design
+	@systemctl --user stop vllm.service clef.service
+	@systemctl --user start strata.service jev.service
+	@printf "$(GREEN)✓ strata + jev up — webui on http://localhost:45300, OpenAI base http://strata:8080/v1$(RESET)\n"
 
 restart: ## restart the fleet
 	@systemctl --user restart $(addsuffix .service,$(SERVICES))

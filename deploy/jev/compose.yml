@@ -16,15 +16,17 @@ services:
     environment:
       - JEV_VLLM_URL=http://vllm:45100/v1
       - JEV_VLLM_API_KEY=${VLLM_API_KEY:-local-dev}
-      - JEV_MODEL=${VLLM_SERVED_NAME:-qwen3.6-27b}
+      - JEV_MODEL=${JEV_MODEL:-clef}
       - JEV_PERMUTATIONS=${JEV_PERMUTATIONS:-1}
       - JEV_OTLP_ENDPOINT=${JEV_OTLP_ENDPOINT:-http://phoenix:6006/v1/traces}
-      # The fleet as decided by the bake-off (docs/evals.md §Decision backends): Clef-Flash answers every
-      # question shape and Spanish within its 4k ubatch budget; the reading path (vLLM) is the last resort
-      # for long states and the only extractor. gpu-decide stops vllm and keeps clef+jev; gpu-teach the
-      # reverse. A backend that is down at open degrades to a failing route — the fleet still serves.
-      - JEV_BACKENDS=[{"id":"clef","kind":"systemone","url":"http://clef:8080","model":"clef","languages":["any"],"max_options":255,"max_state_tokens":4096},{"id":"reading","kind":"reading","url":""}]
-      - JEV_ROWS={"noul":["clef","reading"],"choice":["clef","reading"],"choice_wide":["clef","reading"],"score":["clef","reading"]}
+      # e-jev = clef, por defecto y a secas (docs/evals.md §Decision backends): el modelo de decisión
+      # cubre todas las formas dentro de su presupuesto de batch (~4k tokens de estado) y todo el
+      # español medido. Un backend caído degrada a ruta que falla: jev arranca y sirve lo que puede.
+      # Para re-abrir la vía LLM (estados largos / extract), AÑADE la entrada reading a la lista y
+      # arranca su motor: `make gpu-teach` con vLLM, o un servidor con el dialecto del reader
+      # (/tokenize + /v1/completions con logprob_token_ids — ver brief strata). Sin esa entrada,
+      # jev es 100% clef: largo y extract responden 503/501, nunca silencio.
+      - JEV_BACKENDS=${JEV_BACKENDS:-[{"id":"clef","kind":"systemone","url":"http://clef:8080","model":"clef","languages":["any"],"max_options":255,"max_state_tokens":4096}]}
       - JEV_DECISION_LOG=${JEV_DECISION_LOG:-/data/decisions.jsonl}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:45160/ready')"]

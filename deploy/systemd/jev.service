@@ -1,7 +1,6 @@
 [Unit]
 Description=jev via Docker Compose
 After=vllm.service
-Wants=vllm.service
 
 [Service]
 Type=simple

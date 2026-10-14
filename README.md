@@ -1,13 +1,15 @@
 # e-jev
 
 A self-hosted [Jev](https://docs.typesafe.ai): TypeSafe's System One API — typed, calibrated decisions
-instead of text. Two decision paths behind one contract, sized to your GPU:
+instead of text, served by **Clef-Flash** (Cloudflare, Apache-2.0): a trained decision model, one
+forward pass, every option scored jointly — 6.9 GB, noul p50 38 ms, 20.6 decisions/s. It *beats* the
+generative reader it replaces on quality (WorkflowEvals 0.639 vs 0.573, Banking77 0.961, Spanish
+intents 0.93–0.95), so e-jev is clef and nothing else by default.
 
-- **Clef-Flash** (Cloudflare, Apache-2.0): a trained decision model — one forward, every option scored
-  jointly. 6.9 GB, noul p50 38 ms, 20.6 decisions/s, and it *beats* the generative path on quality
-  (WorkflowEvals 0.639 vs 0.573, Banking77 0.961, Spanish intents 0.93–0.95).
-- **The reader**: exact option-letter logprobs of a generative model (a Qwen served by vLLM),
-  renormalized over your options — the teacher: calibrated, long-context, and the only extractor.
+Optionally, a generative **reader** (vLLM, or any OpenAI server speaking the vLLM logprob dialect —
+`/tokenize` + `/v1/completions` with `logprob_token_ids`) can be added to the fleet: exact option-letter
+logprobs renormalized over your options, which opens long states (> ~4k tokens), `/v1/extract`, and a
+distillation teacher. Without it, those answer 503/501 honestly — never silence.
 
 Wire-compatible with the official `typesafe-sdk`, `@typesafe-ai/sdk`, the TypeSafe n8n node, jevgrep and
 pg-jev: point their base URL here. No text is generated on the decision path; confidence follows
@@ -40,8 +42,8 @@ For this machine, `make deploy` installs everything as systemd --user units unde
 
 One 24 GB card holds clef (6.9) **or** the 27B teacher (21.6), not both:
 
-    make gpu-decide   # clef + jev — the serving default
-    make gpu-teach    # vllm + jev — extraction, long context, refitting
+    make gpu-decide   # clef + jev (vllm stopped) — even with the reader configured
+    make gpu-teach    # vllm + jev (clef stopped) — extraction, long context, refitting
 
 A backend that is down degrades to a failing route: the fleet boots and serves what it can; `/ready`
 reports the survivors. `JEV_DECISION_LOG` records every answered question (state, scores, backend) as

@@ -77,3 +77,4 @@
 2026-10-14T21:35:10+0200 coexist probe: clef load while gemma-4-26B MoE resident @0.83
 2026-10-14T21:35:45+0200 coexist probe: clef OOM vs resident 19.3GB MoE — verdict: no cohabitation on 24GB; swap pattern stands
 2026-10-14T21:53:45+0200 vllm.service stopped: strata (pid 3720652, benchmark del usuario) retiene 20.6 GB — sin solapar con su trabajo
+2026-10-14T22:42:17+0200 coexist FINAL: strata resized to 13.7 GB + clef 7.0 + embed 1.6 — 22.3/24.5: clef resident alongside strata; jev=clef-only serving

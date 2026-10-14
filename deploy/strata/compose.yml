@@ -1,0 +1,55 @@
+services:
+
+  strata:
+    # The local-LLM slot: Qwen3.8-Flash-Next 125B MoE under one stable identity —
+    # host :45100, network name vllm (the alias below), model demian-model (the
+    # config's `aliases` on the volume, kept out of REINSTALL's reach). vllm and
+    # strata never share the card: the units decide via e-jev's gpu-* modes.
+    # Daily pack: IQ2_XS (~39 GB RAM, ~142 tok/s decode); Q4_K_XL (~88 GB, ~47)
+    # for quality runs: switch STRATA_FAMILY/STRATA_MODEL in .env and restart.
+    # Both packs live on the volume; REINSTALL=1 rewrites the config and drops
+    # the aliases — re-add them to /data/config/strata-<model>.json after.
+    image: strata:${STRATA_TAG:-0.1.44.1}
+    container_name: strata
+    hostname: strata
+    restart: unless-stopped
+    labels:
+      e-core.category: "ai"
+      e-core.port: "45100"
+    ports:
+      # 45100 — local LLM, OpenAI + Anthropic compatible (ai)
+      - "${STRATA_PORT:-45100}:45100"
+    volumes:
+      - ../data/strata:/data
+    environment:
+      - FAMILY=${STRATA_FAMILY:-unsloth}
+      - MODEL=${STRATA_MODEL:-UD-Q4_K_XL}
+      - CONTEXT=${STRATA_CONTEXT:-32768}
+      - VISION=no
+      - KV=int8
+      - PORT=45100
+      - API_KEY=${STRATA_API_KEY:-local-dev}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, compute, utility]
+    # Strata page-locks the experts in RAM (~36 GiB for IQ2_XL, ~72 for Q4_K_XL);
+    # the container needs unlimited memlock and the engine needs >10 s to release it.
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    stop_grace_period: 60s
+    networks:
+      e-core:
+        aliases:
+          - vllm
+
+networks:
+  e-core:
+    external: true
