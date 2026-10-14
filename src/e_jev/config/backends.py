@@ -33,7 +33,7 @@ class Backend(BaseModel, frozen=True):
     languages: tuple[Language, ...] = (Language.ANY,)
     max_options: int = Field(255, ge=2, le=255)
     max_state_tokens: int = Field(262_144, ge=64)
-    timeout: float = Field(30.0, gt=0)
+    timeout: float = Field(120.0, gt=0)
 
 
 READING = Backend(id="reading", kind=BackendKind.READING, url="", max_state_tokens=32_768)

@@ -1,7 +1,7 @@
 [Unit]
 Description=clef via Docker Compose
-After=docker.service
-Requires=docker.service
+After=vllm.service
+Wants=vllm.service
 
 [Service]
 Type=simple
