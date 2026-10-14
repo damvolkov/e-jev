@@ -49,3 +49,10 @@ async def test_calibration_temperature_answers_per_backend_and_model(settings: S
 )
 async def test_question_kind_follows_the_readout(question: Question, kind: QuestionKind) -> None:
     assert QuestionKind.of(question) == kind
+
+
+async def test_calibration_load_unreadable_legacy_file(settings: Settings) -> None:
+    settings.calibration.write_bytes(
+        b'{"permutations":1,"backends":{"reading":{"temperatures":{},"ece_before":{},"ece_after":{},"accuracy":{},"fitted":0,"held_out":0}}}'
+    )
+    assert Calibration.load(settings.calibration, 1) is None

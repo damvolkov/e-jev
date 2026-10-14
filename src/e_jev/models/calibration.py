@@ -47,7 +47,11 @@ class Calibration(Struct, frozen=True):
     @classmethod
     def load(cls, path: Path, permutations: int) -> Self | None:
         """The fits at `path` when fitted under this permutation count; per-backend model binding is checked by the caller."""
-        stored = msgspec.json.decode(path.read_bytes(), type=cls) if path.is_file() else None
+        try:
+            stored = msgspec.json.decode(path.read_bytes(), type=cls) if path.is_file() else None
+        except (msgspec.ValidationError, OSError) as error:
+            log.warning("calibration_unreadable", path=str(path), error=str(error)[:160])
+            return None
         match stored:
             case Calibration(permutations=fit_permutations) if fit_permutations == permutations:
                 log.info("calibration_loaded", fitted={b: f.model for b, f in stored.backends.items()})
