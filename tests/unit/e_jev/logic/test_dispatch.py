@@ -46,7 +46,7 @@ def test_dispatch_chains_order_by_row_and_end_in_reading() -> None:
     found = chains(rows, backends, questions, EN_STATE)
     assert found["s"] == [LAYA_MULTI, CLEF, READING]
     assert found["w"] == [CLEF, READING]
-    assert found["n"] == [READING]
+    assert [b.id for b in found["n"]] == ["reading", "clef", "laya"]
 
 
 def test_dispatch_chains_spanish_drops_english_only() -> None:

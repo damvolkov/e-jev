@@ -109,7 +109,7 @@ def chains(
     out: dict[str, list[Backend]] = {}
     for name, question in questions.items():
         kind = QuestionKind.of(question)
-        row = [backends[backend_id] for backend_id in rows.get(kind, ()) if backend_id in backends]
+        row = [backends[backend_id] for backend_id in rows.get(kind, backends) if backend_id in backends]
         eligible = [backend for backend in row if serves(backend, question, state)]
         readers = [backend for backend in backends.values() if backend.kind is BackendKind.READING and backend not in eligible]
         chain = [*eligible, *readers]
