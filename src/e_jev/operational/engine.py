@@ -195,7 +195,8 @@ class Engine:
                     SpanAttributes.INPUT_MIME_TYPE: JSON,
                 }
             )
-            temperature = self._calibration.temperature(backend, QuestionKind.of(question)) if self._calibration else 1.0
+            served_model = (spec.model if (spec := self._specs.get(backend)) else None) or self._model
+            temperature = self._calibration.temperature(backend, served_model, QuestionKind.of(question)) if self._calibration else 1.0
             span.set_attribute("jev.temperature", temperature)
             answer = build_answer(question, scale_temperature(scores, temperature))
             span.set_attributes({SpanAttributes.OUTPUT_VALUE: msgspec.json.encode(answer).decode(), SpanAttributes.OUTPUT_MIME_TYPE: JSON})
