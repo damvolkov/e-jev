@@ -1,18 +1,18 @@
 services:
 
-  jev:
+  ejev:
     image: ghcr.io/damvolkov/e-jev:latest
-    container_name: jev
-    hostname: jev
+    container_name: ejev
+    hostname: ejev
     restart: unless-stopped
     labels:
       e-core.category: "ai"
       e-core.port: "45160"
     ports:
-      # 45160 — e-jev typed decisions over vLLM (ai)
+      # 45160 — e-jev typed decisions (ai)
       - "${JEV_PORT:-45160}:45160"
     volumes:
-      - ../data/jev:/data
+      - ../data/ejev:/data
     environment:
       - JEV_VLLM_URL=http://vllm:45100/v1
       - JEV_VLLM_API_KEY=${VLLM_API_KEY:-local-dev}

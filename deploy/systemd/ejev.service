@@ -1,10 +1,10 @@
 [Unit]
-Description=jev via Docker Compose
+Description=ejev via Docker Compose
 After=vllm.service
 
 [Service]
 Type=simple
-WorkingDirectory=/home/damien/.config/compose/jev
+WorkingDirectory=/home/damien/.config/compose/ejev
 ExecStartPre=/bin/sh -c '/usr/bin/docker compose pull --quiet 2>/dev/null || true'
 ExecStart=/usr/bin/docker compose up --remove-orphans
 ExecStop=/usr/bin/docker compose down

@@ -3,7 +3,7 @@ PROJECT  ?= e-jev
 IMAGE    ?= ghcr.io/damvolkov/e-jev:latest
 COMPOSE  ?= $(HOME)/.config/compose
 UNITS    ?= $(HOME)/.config/systemd/user
-SERVICES ?= jev vllm clef
+SERVICES ?= ejev vllm clef
 TYPESAFE_NODE ?= @typesafe-ai/n8n-nodes-typesafe-ai@0.9.0
 EVALS_REV ?= 0ac3b8ad845429f0d8e064ecfb2430a47c5a25cb
 EVALS_LIMIT ?= 12
@@ -26,7 +26,7 @@ SHELL := bash
 MAKEFLAGS += --no-print-directory
 
 ##### TARGETS #####
-.PHONY: help sync lint type arch test integration graph evals jev-test check build deploy ui watch restart status logs calibrate
+.PHONY: help sync lint type arch test integration graph evals ejev-test check build deploy ui watch restart status logs calibrate
 
 help:
 	@printf "$(BOLD)$(CYAN)$(PROJECT)$(RESET) $(GRAY)· typed decisions over vLLM · compose + systemd --user$(RESET)\n\n"
@@ -50,7 +50,7 @@ test: ## pytest
 integration: ## live tests against JEV_URL (default http://localhost:45160): the triage graph through Pydantic AI
 	@uv run pytest -m integration $(ARGS)
 
-jev-test: ## the service in one shot: ready, one noul + one choice + one score, timed (JEV_URL)
+ejev-test: ## the service in one shot: ready, one noul + one choice + one score, timed (JEV_URL)
 	@curl -fsS $(JEV_URL)/ready >/dev/null && printf "$(GREEN)✓ ready$(RESET) "
 	@body=$$(mktemp); t0=$$(date +%s%N); curl -fsS -o $$body -X POST $(JEV_URL)/v1/systemone -H 'content-type: application/json' -d '$(JEV_TEST_BODY)'; ms=$$(( ( $$(date +%s%N) - t0 ) / 1000000 )); command -v jq >/dev/null && jq . $$body || cat $$body; rm -f $$body; printf "$(GRAY)· %s ms · $(JEV_URL)$(RESET)\n" "$$ms"
 
@@ -65,18 +65,18 @@ evals: ## TypeSafe's WorkflowEvals against e-jev (EVALS_LIMIT cases per workflow
 
 check: lint type arch test ## every local gate
 
-build: ## build the jev image
+build: ## build the ejev image
 	@docker build -t $(IMAGE) .
 
-deploy: build ## install compose dirs + systemd units, enable and (re)start vllm + jev
+deploy: build ## install compose dirs + systemd units, enable and (re)start the stack
 	@for s in $(SERVICES); do mkdir -p $(COMPOSE)/$$s && cp deploy/$$s/compose.yml $(COMPOSE)/$$s/compose.yml && cp deploy/systemd/$$s.service $(UNITS)/$$s.service; done
-	@docker run --rm -v $(COMPOSE)/data:/d busybox sh -c 'mkdir -p /d/jev && chmod 777 /d/jev'
+	@docker run --rm -v $(COMPOSE)/data:/d busybox sh -c 'mkdir -p /d/ejev && chmod 777 /d/ejev'
 	@systemctl --user daemon-reload
 	@systemctl --user enable $(addsuffix .service,$(SERVICES))
 	@systemctl --user restart $(addsuffix .service,$(SERVICES))
 	@printf "$(GREEN)✓ deployed: $(SERVICES)$(RESET)\n"
 
-ui: ## n8n + official TypeSafe node, credential on jev, demo workflow (http://localhost:45700)
+ui: ## n8n + official TypeSafe node, credential on ejev, demo workflow (http://localhost:45700)
 	@mkdir -p $(COMPOSE)/n8n && cp deploy/n8n/compose.yml $(COMPOSE)/n8n/compose.yml && cp deploy/systemd/n8n.service $(UNITS)/n8n.service
 	@docker run --rm -v $(COMPOSE)/data:/d busybox sh -c 'mkdir -p /d/n8n && chown 1000:1000 /d/n8n'
 	@systemctl --user daemon-reload && systemctl --user enable n8n.service && systemctl --user restart n8n.service
@@ -87,7 +87,7 @@ ui: ## n8n + official TypeSafe node, credential on jev, demo workflow (http://lo
 	@systemctl --user restart n8n.service
 	@printf "$(GREEN)✓ n8n on http://localhost:45700 — workflow 'e-jev · System One playground'$(RESET)\n"
 
-watch: ## Phoenix: traces UI + OTLP sink for jev and vllm (http://localhost:45900)
+watch: ## Phoenix: traces UI + OTLP sink for ejev and vllm (http://localhost:45900)
 	@mkdir -p $(COMPOSE)/phoenix && cp deploy/phoenix/compose.yml $(COMPOSE)/phoenix/compose.yml && cp deploy/systemd/phoenix.service $(UNITS)/phoenix.service
 	@docker run --rm -v $(COMPOSE)/data:/d busybox sh -c 'mkdir -p /d/phoenix'
 	@systemctl --user daemon-reload && systemctl --user enable phoenix.service && systemctl --user restart phoenix.service
@@ -100,15 +100,15 @@ strata: ## install the Strata compose dir + unit, never enabled: the card owner 
 	@systemctl --user daemon-reload
 	@printf "$(GREEN)✓ strata unit installed (disabled) — make gpu-human to hand it the card$(RESET)\n"
 
-gpu-decide: ## default serving pattern: decision model on the card, teacher stopped (clef + jev)
+gpu-decide: ## default serving pattern: decision model on the card, teacher stopped (clef + ejev)
 	@systemctl --user stop vllm.service strata.service
-	@systemctl --user start clef.service jev.service
-	@printf "$(GREEN)✓ clef + jev up — make gpu-teach for the vLLM teacher, gpu-human for Strata chat$(RESET)\n"
+	@systemctl --user start clef.service ejev.service
+	@printf "$(GREEN)✓ clef + ejev up — make gpu-teach for the vLLM teacher, gpu-human for Strata chat$(RESET)\n"
 
 gpu-teach: ## teacher pattern: vLLM on the card for extract/long context/fitting, decision model off
 	@systemctl --user stop clef.service strata.service
-	@systemctl --user start vllm.service jev.service
-	@printf "$(GREEN)✓ vllm + jev up$(RESET)\n"
+	@systemctl --user start vllm.service ejev.service
+	@printf "$(GREEN)✓ vllm + ejev up$(RESET)\n"
 
 gpu-human: ## Strata on the card: 125B chat for webui/coders/cortexdb; jev stays up, its GPU routes degrade by design
 	@systemctl --user stop vllm.service clef.service
@@ -120,15 +120,15 @@ restart: ## restart the fleet
 
 status: ## systemd + container health
 	@systemctl --user --no-pager status $(addsuffix .service,$(SERVICES)) | grep -E '●|Active'
-	@docker ps --filter name='^(vllm|jev|clef)$$' --format '{{.Names}}\t{{.Status}}'
+	@docker ps --filter name='^(vllm|ejev|clef)$$' --format '{{.Names}}\t{{.Status}}'
 
 logs: ## follow logs: make logs [vllm|jev]
-	@journalctl --user -fu $(or $(ARGS),jev).service
+	@journalctl --user -fu $(or $(ARGS),ejev).service
 
-calibrate: ## fit per-kind temperatures: make calibrate [labeled.jsonl] (default: BoolQ, AG News, Banking77, SST-5), then restart jev
+calibrate: ## fit per-kind temperatures: make calibrate [labeled.jsonl] (default: BoolQ, AG News, Banking77, SST-5), then restart ejev
 	@[ -n "$(ARGS)" ] || uv run --with datasets python scripts/calibration_build.py $(CALIBRATION_SET) $(CALIBRATION_SIZE)
-	@JEV_CALIBRATION=$(COMPOSE)/data/jev/calibration.json uv run ejev calibrate $(or $(ARGS),$(CALIBRATION_SET))
-	@systemctl --user restart jev.service
+	@JEV_CALIBRATION=$(COMPOSE)/data/ejev/calibration.json uv run ejev calibrate $(or $(ARGS),$(CALIBRATION_SET))
+	@systemctl --user restart ejev.service
 
 %:
 	@:
