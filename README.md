@@ -1,8 +1,8 @@
-<p align="center">
-  <img src="assets/logo.svg" alt="e-jev" width="220" />
-</p>
-
 # e-jev
+
+<p align="center">
+  <img src="assets/logo.svg" alt="e-jev" height="110" />
+</p>
 
 A self-hosted [Jev](https://docs.typesafe.ai): TypeSafe's System One API — typed, calibrated decisions
 instead of text. Two decision paths behind one contract, sized to your GPU:
