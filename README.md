@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="e-jev" width="220" />
+</p>
+
 # e-jev
 
 A self-hosted [Jev](https://docs.typesafe.ai): TypeSafe's System One API — typed, calibrated decisions
