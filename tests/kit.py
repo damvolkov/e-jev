@@ -2,10 +2,13 @@
 
 from collections.abc import AsyncIterator, Callable, Mapping, Sequence
 from contextlib import asynccontextmanager
+from json import dumps
 from typing import Any
 from zlib import crc32
 
 import numpy as np
+from pytest_httpserver import HTTPServer
+from werkzeug.wrappers import Response
 
 from e_jev.adapters.decider.reading import ReadingDecider
 from e_jev.adapters.ports import Decider, OpenFleet, Reader
@@ -92,6 +95,40 @@ class FakeDecider:
 
     async def health(self) -> bool:
         return self.up
+
+
+def _json(payload: dict[str, Any], status: int) -> Response:
+    return Response(dumps(payload), status=status, content_type="application/json")
+
+
+class FakeVllm:
+    """The tokenize dialect double: down, every request 404s like vLLM's missing model does; up, the fixed
+    probe renders stop=4 through the chat template and every label tokenizes."""
+
+    def __init__(self, server: HTTPServer) -> None:
+        self._server = server
+        self.up = False
+        self.attempts = 0
+
+    def url_for(self, path: str) -> str:
+        return self._server.url_for(path)
+
+    def respond(self, request: Any) -> Response:
+        self.attempts += 1
+        match (request.path, request.method, self.up):
+            case ("/health", "GET", _):
+                return _json({"status": "ok"}, 200)
+            case ("/tokenize", "POST", False):
+                return _json(
+                    {"error": {"message": f"The model `{request.json['model']}` does not exist.", "type": "NotFoundError", "code": 404}},
+                    404,
+                )
+            case ("/tokenize", "POST", True):
+                return _json(
+                    {"tokens": [1, 2, 3, 4, 5, 6, 7] if "messages" in request.json else [1, 2, 3], "count": 7, "max_model_len": 65536}, 200
+                )
+            case _:
+                return _json({"error": {"message": f"no route {request.path}"}}, 404)
 
 
 def backend(backend_id: str, kind: BackendKind, *, languages: tuple[Language, ...] = (Language.ANY,), **limits: Any) -> Backend:
