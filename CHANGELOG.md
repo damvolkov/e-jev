@@ -6,6 +6,17 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Fixed
+
+- Fleet stability: a backend that failed to open (the vLLM reader caught mid-model-load is the case)
+  reopens itself once the server returns — retried at most once per `REOPEN_DELAY` with its freshest
+  diagnosis — instead of parking `/ready` at 503 for the container's whole life; the reader's open
+  classifies HTTP refusals instead of collapsing them into `unreachable`.
+- Deploy: systemd is the sole owner of the ejev container (`restart: "no"`) and the unit gates on vLLM
+  health — it waits while the vLLM container is `starting` and passes when it is absent, so the
+  daemon's restart manager can no longer revive ejev beside a still-loading model (the 503 poisoning
+  after a dockerd crash) and `gpu-decide` still serves without vLLM.
+
 ### Changed
 
 - Identity: the multi-backend purpose is stated in the description and README — the decision backend is a
