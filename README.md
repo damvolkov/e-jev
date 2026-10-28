@@ -1,17 +1,26 @@
-# e-jev
+<p align="center">
+  <a href="https://img.shields.io/badge/python-3.13-166b7e"><img src="https://img.shields.io/badge/python-3.13-166b7e" alt="Python"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/damvolkov/e-jev?color=166b7e" alt="License"></a>
+</p>
 
 <p align="center">
   <img src="assets/logo.svg" alt="e-jev" height="110" />
 </p>
 
 A self-hosted [Jev](https://docs.typesafe.ai): TypeSafe's System One API — typed, calibrated decisions
-instead of text. Two decision paths behind one contract, sized to your GPU:
+instead of text. Not a shell around one model: a **fleet of decision backends** behind one contract.
+Each request is routed by question kind, language and state size, and falls down its row when a backend
+is down or the shape does not fit. Today's backends:
 
 - **Clef-Flash** (Cloudflare, Apache-2.0): a trained decision model — one forward, every option scored
   jointly. 6.9 GB, noul p50 38 ms, 20.6 decisions/s, and it *beats* the generative path on quality
   (WorkflowEvals 0.639 vs 0.573, Banking77 0.961, Spanish intents 0.93–0.95).
 - **The reader**: exact option-letter logprobs of a generative model (a Qwen served by vLLM),
   renormalized over your options — the teacher: calibrated, long-context, and the only extractor.
+- **Laya**, and any server that answers `/v1/systemone`: a new backend is a row in `JEV_BACKENDS`,
+  not a new deployment path.
+
+Part of the **EDamLabs eager series**: EDamLabs' own e- products ([EDamLabs families](https://github.com/edamlabs/esteward#identity)).
 
 Wire-compatible with the official `typesafe-sdk`, `@typesafe-ai/sdk`, the TypeSafe n8n node, jevgrep and
 pg-jev: point their base URL here. No text is generated on the decision path; confidence follows
