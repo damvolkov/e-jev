@@ -4,7 +4,10 @@ services:
     image: ghcr.io/damvolkov/e-jev:latest
     container_name: ejev
     hostname: ejev
-    restart: unless-stopped
+    # systemd owns this container's lifecycle (unit + gated ExecStartPre). A docker restart policy
+    # would let the daemon revive it unordered after a dockerd crash — beside a still-loading vLLM,
+    # which poisons the reader probe and parks /ready at 503 until the next manual restart.
+    restart: "no"
     labels:
       e-core.category: "ai"
       e-core.port: "45160"

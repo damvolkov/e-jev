@@ -6,12 +6,18 @@ After=vllm.service
 Type=simple
 WorkingDirectory=/home/damien/.config/compose/ejev
 ExecStartPre=/bin/sh -c '/usr/bin/docker compose pull --quiet 2>/dev/null || true'
+# The reader probes vLLM once when the container starts and a refused probe used to poison /ready for
+# the container's whole life. vLLM spends minutes loading ~20 GB before its socket answers, so wait
+# while its container is "starting"; absent or unhealthy passes through (gpu-decide runs without it).
+# ejev is the sole owner of its container: see `restart: "no"` in the compose — the daemon must never
+# revive it out of order after a dockerd crash.
+ExecStartPre=/bin/sh -c 'while [ "$$(docker inspect --format "{{.State.Health.Status}}" vllm 2>/dev/null)" = "starting" ]; do sleep 5; done'
 ExecStart=/usr/bin/docker compose up --remove-orphans
 ExecStop=/usr/bin/docker compose down
 ExecReload=/usr/bin/docker compose up -d --remove-orphans
 Restart=on-failure
 RestartSec=10s
-TimeoutStartSec=120
+TimeoutStartSec=900
 TimeoutStopSec=30
 
 [Install]

@@ -112,7 +112,7 @@ gpu-teach: ## teacher pattern: vLLM on the card for extract/long context/fitting
 
 gpu-human: ## Strata on the card: 125B chat for webui/coders/cortexdb; jev stays up, its GPU routes degrade by design
 	@systemctl --user stop vllm.service clef.service
-	@systemctl --user start strata.service jev.service
+	@systemctl --user start strata.service ejev.service
 	@printf "$(GREEN)✓ strata + jev up — webui on http://localhost:45300, OpenAI base http://strata:8080/v1$(RESET)\n"
 
 restart: ## restart the fleet
