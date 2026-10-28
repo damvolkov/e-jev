@@ -76,6 +76,7 @@ async def calibrate(
     rows = [scored for _, scored in answered]
     fit = fit_kinds(rows)
     entry = KindFit(
+        model=wanted.model or settings.model,
         temperatures={QuestionKind(kind): value for kind, value in fit.temperatures.items()},
         ece_before={QuestionKind(kind): value for kind, value in fit.ece_before.items()},
         ece_after={QuestionKind(kind): value for kind, value in fit.ece_after.items()},

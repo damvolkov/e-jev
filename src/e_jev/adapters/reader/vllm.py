@@ -98,9 +98,22 @@ class VllmReader:
             case APIError(message=message):
                 return VllmReaderError(stage, message)
             case httpx.HTTPStatusError(response=response):
-                return VllmReaderError(stage, f"HTTP {response.status_code}: {response.reason_phrase}")
+                return VllmReaderError(stage, f"HTTP {response.status_code}: {VllmReader._open_detail(response)}")
             case _:
                 return VllmReaderError(stage, str(error))
+
+    @staticmethod
+    def _open_detail(response: httpx.Response) -> str:
+        """The reason the server states in its body when it states one: a 404 naming a missing model is not an unreachable host."""
+        try:
+            body = response.json()
+        except ValueError:
+            body = None
+        match body:
+            case {"error": {"message": str() as message}} if message:
+                return message
+            case _:
+                return response.reason_phrase or f"HTTP {response.status_code}"
 
     @classmethod
     async def _open_labels(cls, http: httpx.AsyncClient, model: str) -> dict[str, tuple[int, ...]]:
@@ -144,6 +157,8 @@ class VllmReader:
             )
             try:
                 labels, stop = await asyncio.gather(cls._open_labels(http, settings.model), cls._open_stop(http, settings.model))
+            except httpx.HTTPStatusError as error:
+                raise cls._open_classify(VllmStage.TOKENIZE, error) from error
             except httpx.HTTPError as error:
                 raise VllmReaderError(VllmStage.TOKENIZE, f"unreachable at {settings.vllm_url}") from error
             log.info("reader_opened", model=settings.model, url=settings.vllm_url, stop=stop)

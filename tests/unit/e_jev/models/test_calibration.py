@@ -6,8 +6,9 @@ from e_jev.models.calibration import Calibration, KindFit
 from e_jev.models.systemone import Choice, Noul, Question, QuestionKind, Score
 
 
-def _fit() -> KindFit:
+def _fit(model: str = "m") -> KindFit:
     return KindFit(
+        model=model,
         temperatures={QuestionKind.NOUL: 1.7},
         ece_before={QuestionKind.NOUL: 0.1},
         ece_after={QuestionKind.NOUL: 0.02},
@@ -28,11 +29,12 @@ async def test_calibration_load_missing(settings: Settings) -> None:
     assert Calibration.load(settings.calibration, 1) is None
 
 
-async def test_calibration_temperature_answers_per_backend(settings: Settings) -> None:
-    fitted = Calibration(permutations=1, backends={"reading": _fit(), "clef": _fit()})
-    assert fitted.temperature("reading", QuestionKind.NOUL) == 1.7
-    assert fitted.temperature("jevos", QuestionKind.NOUL) == 1.0
-    assert fitted.temperature("reading", QuestionKind.SCORE) == 1.0
+async def test_calibration_temperature_answers_per_backend_and_model(settings: Settings) -> None:
+    fitted = Calibration(permutations=1, backends={"reading": _fit("m"), "clef": _fit("clef")})
+    assert fitted.temperature("reading", "m", QuestionKind.NOUL) == 1.7
+    assert fitted.temperature("jevos", "m", QuestionKind.NOUL) == 1.0
+    assert fitted.temperature("reading", "m", QuestionKind.SCORE) == 1.0
+    assert fitted.temperature("reading", "other-model", QuestionKind.NOUL) == 1.0
 
 
 @pytest.mark.parametrize(
@@ -47,3 +49,10 @@ async def test_calibration_temperature_answers_per_backend(settings: Settings) -
 )
 async def test_question_kind_follows_the_readout(question: Question, kind: QuestionKind) -> None:
     assert QuestionKind.of(question) == kind
+
+
+async def test_calibration_load_unreadable_legacy_file(settings: Settings) -> None:
+    settings.calibration.write_bytes(
+        b'{"permutations":1,"backends":{"reading":{"temperatures":{},"ece_before":{},"ece_after":{},"accuracy":{},"fitted":0,"held_out":0}}}'
+    )
+    assert Calibration.load(settings.calibration, 1) is None

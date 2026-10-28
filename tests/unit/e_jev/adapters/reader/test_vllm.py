@@ -7,9 +7,11 @@ import httpx
 import httpx2
 import pytest
 from openai import APIConnectionError, APIStatusError, APITimeoutError, RateLimitError
+from tests import kit
 
 from e_jev.adapters.reader.vllm import VllmReader, VllmReaderError, VllmStage
 from e_jev.core.errors import OverloadedError, RateLimitedError
+from e_jev.core.settings import Settings
 
 OPENAI_REQUEST = httpx2.Request("POST", "http://vllm/v1/completions")
 HTTPX_REQUEST = httpx.Request("POST", "http://vllm/tokenize")
@@ -47,3 +49,31 @@ def _rate_limited(headers: dict[str, str]) -> RateLimitError:
 def test_vllm_classify_capacity(error: Exception, expected: type, retry_after: float | None) -> None:
     failure = VllmReader._open_classify(VllmStage.READOUT, error)
     assert (type(failure), getattr(failure, "retry_after", None)) == (expected, retry_after)
+
+
+@pytest.mark.parametrize(
+    ("status", "content", "expected"),
+    [
+        (404, b'{"error": {"message": "The model `clef` does not exist."}}', "HTTP 404: The model `clef` does not exist."),
+        (500, b"boom", "HTTP 500: Internal Server Error"),
+        (400, b'{"detail": "no"}', "HTTP 400: Bad Request"),
+    ],
+    ids=["model-missing", "not-json", "no-error-field"],
+)
+def test_vllm_classify_status_names_the_server_reason(status: int, content: bytes, expected: str) -> None:
+    reply = httpx.Response(status, request=HTTPX_REQUEST, content=content)
+    failure = VllmReader._open_classify(VllmStage.TOKENIZE, httpx.HTTPStatusError("upstream", request=HTTPX_REQUEST, response=reply))
+    assert failure.message == f"vllm tokenize: {expected}"
+
+
+async def test_vllm_open_reports_unreachable_without_a_server(dead_vllm_settings: Settings) -> None:
+    with pytest.raises(VllmReaderError, match="unreachable at"):
+        async with VllmReader.open(dead_vllm_settings):
+            pass
+
+
+async def test_vllm_open_names_the_refusal_of_a_live_server(fake_vllm: kit.FakeVllm, vllm_settings: Settings) -> None:
+    with pytest.raises(VllmReaderError, match=r"HTTP 404: The model `m` does not exist") as raised:
+        async with VllmReader.open(vllm_settings):
+            pass
+    assert "unreachable" not in raised.value.message

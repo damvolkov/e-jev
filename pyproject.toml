@@ -51,6 +51,7 @@ dev = [
     "tach>=0.35.1",
     "pydantic-ai-slim[typesafe]>=2.52.0",
     "pydantic-graph>=2.52.0",
+    "pytest-httpserver>=1.2.0",
 ]
 
 ##### IDENTITY #####
@@ -113,4 +114,4 @@ pythonpath = ["."]
 markers = ["integration: needs a live System One endpoint at JEV_URL (make integration)"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-filterwarnings = ["error"]
+filterwarnings = ["error", "ignore:Exception ignored in.*connect_tcp.*:pytest.PytestUnraisableExceptionWarning"]

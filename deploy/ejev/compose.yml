@@ -1,0 +1,45 @@
+services:
+
+  ejev:
+    image: ghcr.io/damvolkov/e-jev:latest
+    container_name: ejev
+    hostname: ejev
+    # systemd owns this container's lifecycle (unit + gated ExecStartPre). A docker restart policy
+    # would let the daemon revive it unordered after a dockerd crash — beside a still-loading vLLM,
+    # which poisons the reader probe and parks /ready at 503 until the next manual restart.
+    restart: "no"
+    labels:
+      e-core.category: "ai"
+      e-core.port: "45160"
+    ports:
+      # 45160 — e-jev typed decisions (ai)
+      - "${JEV_PORT:-45160}:45160"
+    volumes:
+      - ../data/ejev:/data
+    environment:
+      - JEV_VLLM_URL=http://vllm:45100/v1
+      - JEV_VLLM_API_KEY=${VLLM_API_KEY:-local-dev}
+      - JEV_MODEL=${JEV_MODEL:-clef}
+      - JEV_PERMUTATIONS=${JEV_PERMUTATIONS:-1}
+      - JEV_OTLP_ENDPOINT=${JEV_OTLP_ENDPOINT:-http://phoenix:6006/v1/traces}
+      # e-jev = clef, por defecto y a secas (docs/evals.md §Decision backends): el modelo de decisión
+      # cubre todas las formas dentro de su presupuesto de batch (~4k tokens de estado) y todo el
+      # español medido. Un backend caído degrada a ruta que falla: jev arranca y sirve lo que puede.
+      # Para re-abrir la vía LLM (estados largos / extract), AÑADE la entrada reading a la lista y
+      # arranca su motor: `make gpu-teach` con vLLM, o un servidor con el dialecto del reader
+      # (/tokenize + /v1/completions con logprob_token_ids — ver brief strata). Sin esa entrada,
+      # jev es 100% clef: largo y extract responden 503/501, nunca silencio.
+      - JEV_BACKENDS=${JEV_BACKENDS:-[{"id":"clef","kind":"systemone","url":"http://clef:8080","model":"clef","languages":["any"],"max_options":255,"max_state_tokens":4096}]}
+      - JEV_DECISION_LOG=${JEV_DECISION_LOG:-/data/decisions.jsonl}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:45160/ready')"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - e-core
+
+networks:
+  e-core:
+    external: true

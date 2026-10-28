@@ -1,0 +1,18 @@
+[Unit]
+Description=strata via Docker Compose
+
+[Service]
+Type=simple
+WorkingDirectory=/home/damien/.config/compose/strata
+ExecStart=/usr/bin/docker compose up --remove-orphans
+ExecStop=/usr/bin/docker compose down
+ExecReload=/usr/bin/docker compose up -d --remove-orphans
+Restart=on-failure
+RestartSec=10s
+# first start downloads and packs the model; later starts load ~72 GiB of pinned RAM
+TimeoutStartSec=900
+# the engine releases its page-locked RAM on SIGTERM; the window is the compose stop_grace_period plus slack
+TimeoutStopSec=90
+
+[Install]
+WantedBy=default.target

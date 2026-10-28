@@ -26,6 +26,7 @@ def engine_mirrored(reader) -> Engine:
 @pytest.fixture
 def engine_cooled(reader) -> Engine:
     fitted = KindFit(
+        model="m",
         temperatures=dict.fromkeys(QuestionKind, 1e6),
         ece_before={},
         ece_after={},
