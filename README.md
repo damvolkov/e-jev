@@ -1,4 +1,11 @@
-# e-jev
+<p align="center">
+  <a href="https://img.shields.io/badge/python-3.13-166b7e"><img src="https://img.shields.io/badge/python-3.13-166b7e" alt="Python"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/damvolkov/e-jev?color=166b7e" alt="License"></a>
+</p>
+
+<p align="center">
+  <img src="assets/logo.svg" alt="e-jev" height="110" />
+</p>
 
 A self-hosted [Jev](https://docs.typesafe.ai): TypeSafe's System One API — typed, calibrated decisions
 instead of text, served by **Clef-Flash** (Cloudflare, Apache-2.0): a trained decision model, one
@@ -10,6 +17,8 @@ Optionally, a generative **reader** (vLLM, or any OpenAI server speaking the vLL
 `/tokenize` + `/v1/completions` with `logprob_token_ids`) can be added to the fleet: exact option-letter
 logprobs renormalized over your options, which opens long states (> ~4k tokens), `/v1/extract`, and a
 distillation teacher. Without it, those answer 503/501 honestly — never silence.
+
+Part of the **EDamLabs eager series**: EDamLabs' own e- products ([EDamLabs families](https://github.com/edamlabs/esteward#identity)).
 
 Wire-compatible with the official `typesafe-sdk`, `@typesafe-ai/sdk`, the TypeSafe n8n node, jevgrep and
 pg-jev: point their base URL here. No text is generated on the decision path; confidence follows
